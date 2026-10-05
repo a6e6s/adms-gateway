@@ -1,7 +1,7 @@
 # ADMS Gateway — Attendance MVP MVC Implementation Plan
 
 **Date:** 5 October 2026  
-**Status:** Planned; application implementation has not started  
+**Status:** Implementation underway; this plan remains the MVP scope baseline  
 **Scope:** Company/device administration, live attendance capture, historical attendance requests, and attendance browsing.
 
 ## 1. Goal and confirmed device behavior
@@ -53,7 +53,7 @@ Excluded: biometric templates/photos, user synchronization to terminals, door/re
 
 **Table:** `devices`
 
-- Fields: `id`, `company_id`, globally unique `serial_number`, `name`, optional `location`, optional `expected_ip`, explicit `timezone`, `is_enabled`, `protocol_profile`, optional firmware metadata, `last_seen_at`, timestamps.
+- Fields: `id`, `company_id`, globally unique `serial_number`, `name`, optional `location`, optional `expected_ip`, explicit `timezone`, `is_enabled`, `protocol_profile`, optional firmware metadata, `last_seen_at`, `last_seen_ip`, timestamps.
 - Relationships: belongs to company; has many uploads, punches, commands, and DeviceEmployee mappings.
 - Initial profile: the observed PUSH 2.4.0 attendance format.
 - Keep device/company association immutable once history exists. Moving a device requires a later explicit migration workflow.
@@ -144,7 +144,7 @@ Use a dedicated exact `/iclock/*` route group registered through the installed L
 
 Allow `table=options` separately for bounded device capability metadata if needed for the observed handshake. Reject unsupported biometric/user tables without success. Implement auxiliary endpoints or alternate methods only if actual device traffic requires them.
 
-Some devices omit SN on `/iclock/devicecmd`. First inspect the probe capture for this device. If necessary, resolve results through a provisioned unique expected IP plus a matching issued wire ID, reject ambiguous NAT/shared-IP cases, and document that this remains a local-network compatibility safeguard. Do not select a device from an arbitrary result ID alone.
+Some devices omit SN on `/iclock/devicecmd`. Resolve results only when the source IP was recently observed for exactly one device, then require a matching issued wire ID. Reject ambiguous NAT/shared-IP cases. An optional expected IP provides a stricter local-network check. Do not select a device from an arbitrary result ID alone.
 
 Controllers delegate persistence/processing/commands to services. User/device input must not determine arbitrary command text or table names for queries.
 
@@ -199,7 +199,7 @@ Reuse the existing `admin` panel and generate Filament 5 resources using install
 | EmployeeResource | List/create/edit/retire employees; device-PIN mappings through a relation manager |
 | DeviceCommandResource | Read-only history/details; requester, wire ID, state, result, age/expiry; cancellation only before offer |
 
-DeviceEmployee is managed through a relation manager rather than a separate top-level resource. Add a small dashboard only after the core flow works: enabled devices, stale last-seen, today's punches, pending/failed uploads, and unknown commands. Show upload time separately from punch time so historical downloads are not mistaken for current attendance.
+DeviceEmployee is managed through a create-only top-level resource in the first implementation so operators can explicitly map PINs to employees. Add a small dashboard only after the core flow works: enabled devices, stale last-seen, today's punches, pending/failed uploads, and unknown commands. Show upload time separately from punch time so historical downloads are not mistaken for current attendance.
 
 Do not label raw codes as check-in/check-out or fingerprint until verified. Do not expose raw payload editing or unrestricted command text.
 
@@ -254,7 +254,7 @@ Do not label raw codes as check-in/check-out or fingerprint until verified. Do n
 
 ### Step 6 — Optional employee enrichment
 
-- [ ] Add EmployeeResource and DeviceEmployee relation managers.
+- [ ] Add EmployeeResource and a create-only DeviceEmployee mapping resource with same-company validation.
 - [ ] Keep unmapped PINs visible and valid.
 - [ ] Allow explicit association/backfill of matching punches after validating mapping; never change punch identity.
 - [ ] Prevent cross-company mappings and silent historical reassignment.
