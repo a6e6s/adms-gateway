@@ -51,6 +51,8 @@ class DeviceResource extends Resource
                 TextColumn::make('company.name')->sortable(),
                 TextColumn::make('push_version')->label('PUSH'),
                 TextColumn::make('last_seen_at')->dateTime()->sortable()->placeholder('Never'),
+                TextColumn::make('last_getrequest_at')->label('Last command poll')->dateTime()->sortable()->placeholder('Never'),
+                TextColumn::make('attlog_stamp')->label('Attendance stamp')->placeholder('Not received'),
                 IconColumn::make('is_enabled')->boolean(),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('company'))
@@ -61,7 +63,7 @@ class DeviceResource extends Resource
                     ->label('Request stored attendance')
                     ->icon(Heroicon::OutlinedArrowDownTray)
                     ->requiresConfirmation()
-                    ->modalDescription('The device may upload all stored attendance records.')
+                    ->modalDescription('The request is delivered the next time the device polls /iclock/getrequest. Any returned records are saved and processed asynchronously.')
                     ->action(function (Device $record, DeviceCommandService $commands): void {
                         $user = auth()->user();
                         if (! $user instanceof User) {
@@ -70,7 +72,7 @@ class DeviceResource extends Resource
 
                         try {
                             $commands->requestAttendance($record, $user);
-                            Notification::make()->title('Attendance request queued')->success()->send();
+                            Notification::make()->title('Attendance request waiting for device poll')->success()->send();
                         } catch (\DomainException $exception) {
                             Notification::make()->title($exception->getMessage())->danger()->send();
                         }

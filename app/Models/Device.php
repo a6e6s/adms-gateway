@@ -13,11 +13,11 @@ class Device extends Model
     /** @use HasFactory<DeviceFactory> */
     use HasFactory;
 
-    protected $fillable = ['company_id', 'serial_number', 'name', 'location', 'expected_ip', 'timezone', 'protocol_profile', 'push_version', 'device_type', 'is_enabled', 'last_seen_ip'];
+    protected $fillable = ['company_id', 'serial_number', 'name', 'location', 'expected_ip', 'timezone', 'protocol_profile', 'push_version', 'device_type', 'is_enabled', 'last_seen_ip', 'attlog_stamp'];
 
     protected function casts(): array
     {
-        return ['is_enabled' => 'boolean', 'last_seen_at' => 'immutable_datetime'];
+        return ['is_enabled' => 'boolean', 'last_seen_at' => 'immutable_datetime', 'last_getrequest_at' => 'immutable_datetime'];
     }
 
     public function company(): BelongsTo

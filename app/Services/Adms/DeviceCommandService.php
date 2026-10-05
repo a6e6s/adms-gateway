@@ -48,6 +48,9 @@ class DeviceCommandService
     public function offerNext(Device $device): string
     {
         return DB::transaction(function () use ($device): string {
+            $device->commands()->where('status', 'pending')->where('expires_at', '<=', now())
+                ->update(['status' => 'expired', 'updated_at' => now()]);
+
             $device->commands()->where('status', 'offered')->where('expires_at', '<=', now())
                 ->update(['status' => 'unknown', 'updated_at' => now()]);
 

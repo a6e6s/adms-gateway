@@ -31,7 +31,7 @@ class DeviceController extends Controller
 
         return response(implode("\n", [
             "GET OPTION FROM: {$device->serial_number}",
-            'ATTLOGStamp=None',
+            'ATTLOGStamp='.($device->attlog_stamp ?? 'None'),
             'ErrorDelay=60',
             'Delay=10',
             'TransTimes=00:00;14:05',
@@ -78,7 +78,9 @@ class DeviceController extends Controller
         }
 
         $stamp = $request->query('Stamp');
-        $acceptUpload->accept($device, $payload, is_string($stamp) ? mb_substr($stamp, 0, 100) : null, $request->ip());
+        $stamp = is_string($stamp) ? preg_replace('/[\x00-\x1F\x7F]/', '', trim($stamp)) : null;
+        $stamp = is_string($stamp) && $stamp !== '' ? mb_substr($stamp, 0, 100) : null;
+        $acceptUpload->accept($device, $payload, $stamp, $request->ip());
 
         return $this->plain('OK');
     }
@@ -90,7 +92,7 @@ class DeviceController extends Controller
             return $device;
         }
 
-        $this->touch($device, $request);
+        $this->touch($device, $request, commandPoll: true);
 
         return $this->plain($commands->offerNext($device));
     }
@@ -153,12 +155,18 @@ class DeviceController extends Controller
         return $device;
     }
 
-    private function touch(Device $device, Request $request): void
+    private function touch(Device $device, Request $request, bool $commandPoll = false): void
     {
-        $device->forceFill([
+        $attributes = [
             'last_seen_at' => now(),
             'last_seen_ip' => $request->ip(),
-        ])->save();
+        ];
+
+        if ($commandPoll) {
+            $attributes['last_getrequest_at'] = now();
+        }
+
+        $device->forceFill($attributes)->save();
     }
 
     private function plain(string $body, int $status = SymfonyResponse::HTTP_OK): Response

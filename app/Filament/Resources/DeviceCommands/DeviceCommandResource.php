@@ -33,10 +33,15 @@ class DeviceCommandResource extends Resource
                 TextColumn::make('device.serial_number')->label('Device')->searchable(),
                 TextColumn::make('type')->badge(),
                 TextColumn::make('wire_command_id')->label('Wire ID'),
-                TextColumn::make('status')->badge(),
+                TextColumn::make('status')
+                    ->badge()
+                    ->state(fn (DeviceCommand $record): string => $record->status === 'pending' && $record->expires_at->isPast()
+                        ? 'expired'
+                        : $record->status),
                 TextColumn::make('requested_at')->dateTime()->sortable(),
                 TextColumn::make('offered_at')->dateTime(),
                 TextColumn::make('result_received_at')->dateTime(),
+                TextColumn::make('expires_at')->dateTime(),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('device'))
             ->filters([])
