@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\Iclock\DeviceController;
+use App\Http\Controllers\SetAdminLanguageController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+Route::post('/admin/language', SetAdminLanguageController::class)
+    ->middleware('auth')
+    ->name('admin.language');
 
 Route::prefix('iclock')->name('iclock.')->group(function (): void {
     Route::get('/cdata', [DeviceController::class, 'initialize'])->name('initialize');

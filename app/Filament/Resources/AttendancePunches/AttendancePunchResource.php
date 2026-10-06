@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AttendancePunches;
 
+use App\Enums\AttendanceStatus;
 use App\Filament\Resources\AttendancePunches\Pages\ManageAttendancePunches;
 use App\Models\AttendancePunch;
 use BackedEnum;
@@ -12,12 +13,32 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class AttendancePunchResource extends Resource
 {
     protected static ?string $model = AttendancePunch::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?int $navigationSort = 10;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.navigation.groups.operations');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament/resources/attendance-punches.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament/resources/attendance-punches.plural_model_label');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -31,17 +52,17 @@ class AttendancePunchResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('occurred_at_local')->label('Device time')->sortable()->searchable(),
-                TextColumn::make('pin')->searchable()->sortable(),
-                TextColumn::make('employee.name')->label('Employee')->placeholder('Unmapped'),
-                TextColumn::make('device.serial_number')->label('Device')->searchable(),
-                TextColumn::make('status_code')->label('Status'),
-                TextColumn::make('verification_code')->label('Verify'),
-                TextColumn::make('timezone'),
-                TextColumn::make('received_at')->dateTime()->sortable(),
+                TextColumn::make('occurred_at_local')->label(__('filament/resources/attendance-punches.columns.device_time'))->sortable()->searchable(),
+                TextColumn::make('pin')->label(__('filament/resources/attendance-punches.columns.pin'))->searchable()->sortable(),
+                TextColumn::make('employee.name')->label(__('filament/resources/attendance-punches.columns.employee'))->placeholder(__('filament.common.unmapped')),
+                TextColumn::make('device.serial_number')->label(__('filament/resources/attendance-punches.columns.device'))->searchable(),
+                TextColumn::make('status_code')->label(__('filament/resources/attendance-punches.columns.status'))->formatStateUsing(fn (?string $state): string => AttendanceStatus::label($state)),
+                TextColumn::make('verification_code')->label(__('filament/resources/attendance-punches.columns.verification_code')),
+                TextColumn::make('timezone')->label(__('filament/resources/attendance-punches.columns.timezone')),
+                TextColumn::make('received_at')->label(__('filament/resources/attendance-punches.columns.received_at'))->dateTime()->sortable(),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['device', 'employee']))
-            ->filters([SelectFilter::make('device_id')->relationship('device', 'serial_number')])
+            ->filters([SelectFilter::make('device_id')->label(__('filament/resources/attendance-punches.filters.device'))->relationship('device', 'serial_number')])
             ->recordActions([])
             ->toolbarActions([]);
     }

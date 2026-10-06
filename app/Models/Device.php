@@ -20,6 +20,19 @@ class Device extends Model
         return ['is_enabled' => 'boolean', 'last_seen_at' => 'immutable_datetime', 'last_getrequest_at' => 'immutable_datetime'];
     }
 
+    public function isOnline(): bool
+    {
+        $lastSeenAt = $this->last_seen_at;
+
+        if ($lastSeenAt === null) {
+            return false;
+        }
+
+        $onlineWindowMinutes = max(1, (int) config('services.adms.device_online_window_minutes', 5));
+
+        return $lastSeenAt->greaterThanOrEqualTo(now()->subMinutes($onlineWindowMinutes));
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);

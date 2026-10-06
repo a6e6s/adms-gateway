@@ -13,20 +13,40 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class DeviceEmployeeResource extends Resource
 {
     protected static ?string $model = DeviceEmployee::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
+
+    protected static string|UnitEnum|null $navigationGroup = 'People';
+
+    protected static ?int $navigationSort = 30;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.navigation.groups.people');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament/resources/device-employees.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament/resources/device-employees.plural_model_label');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Select::make('device_id')->relationship('device', 'serial_number')->required()->searchable()->preload(),
-                Select::make('employee_id')->relationship('employee', 'name')->required()->searchable()->preload(),
-                TextInput::make('pin')->required()->maxLength(100),
+                Select::make('device_id')->label(__('filament/resources/device-employees.fields.device'))->relationship('device', 'serial_number')->required()->searchable()->preload(),
+                Select::make('employee_id')->label(__('filament/resources/device-employees.fields.employee'))->relationship('employee', 'name')->required()->searchable()->preload(),
+                TextInput::make('pin')->label(__('filament/resources/device-employees.fields.pin'))->required()->maxLength(100),
             ]);
     }
 
@@ -34,10 +54,10 @@ class DeviceEmployeeResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('pin')->searchable()->sortable(),
-                TextColumn::make('device.serial_number')->label('Device')->searchable(),
-                TextColumn::make('employee.name')->label('Employee')->searchable(),
-                TextColumn::make('employee.company.name')->label('Company'),
+                TextColumn::make('pin')->label(__('filament/resources/device-employees.columns.pin'))->searchable()->sortable(),
+                TextColumn::make('device.serial_number')->label(__('filament/resources/device-employees.columns.device'))->searchable(),
+                TextColumn::make('employee.name')->label(__('filament/resources/device-employees.columns.employee'))->searchable(),
+                TextColumn::make('employee.company.name')->label(__('filament/resources/device-employees.columns.company')),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['device', 'employee.company']))
             ->filters([])

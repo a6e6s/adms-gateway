@@ -2,15 +2,19 @@
 
 namespace App\Providers\Filament;
 
-use Filament\Http\Middleware\Authenticate;
+use App\Http\Middleware\SetFilamentLocale;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -29,9 +33,21 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName(fn (): string => __('filament.brand'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Cyan,
+                'gray' => Color::Slate,
             ])
+            ->sidebarWidth('17rem')
+            ->viteTheme('resources/css/filament/admin/theme.css')
+            ->maxContentWidth(Width::Full)
+            ->navigationGroups([
+                NavigationGroup::make()->label(fn (): string => __('filament.navigation.groups.operations')),
+                NavigationGroup::make()->label(fn (): string => __('filament.navigation.groups.people')),
+                NavigationGroup::make()->label(fn (): string => __('filament.navigation.groups.devices')),
+            ])
+            ->renderHook(PanelsRenderHook::TOPBAR_START, fn () => view('filament.partials.topbar-notification'))
+            ->renderHook(PanelsRenderHook::USER_MENU_BEFORE, fn () => view('filament.partials.language-switcher'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -52,7 +68,8 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
-            ])
+                SetFilamentLocale::class,
+            ], isPersistent: true)
             ->plugins([
                 FilamentShieldPlugin::make(),
             ])

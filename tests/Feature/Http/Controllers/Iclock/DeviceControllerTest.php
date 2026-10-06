@@ -1,6 +1,11 @@
 <?php
 
+use App\Enums\AttendanceStatus;
+use App\Filament\Resources\Companies\Pages\ManageCompanies;
+use App\Filament\Resources\Devices\DeviceResource;
 use App\Filament\Resources\Devices\Pages\ManageDevices;
+use App\Filament\Resources\Employees\Pages\ManageEmployees;
+use App\Models\Company;
 use App\Models\Device;
 use App\Models\DeviceEmployee;
 use App\Models\Employee;
@@ -8,6 +13,7 @@ use App\Models\User;
 use App\Services\Adms\DeviceCommandService;
 use App\Services\Adms\DeviceCommandWaker;
 use Filament\Actions\Testing\TestAction;
+use Filament\Navigation\NavigationGroup;
 use Livewire\Livewire;
 
 it('returns the device attendance stamp during initialization', function () {
@@ -200,8 +206,9 @@ it('accepts an earlier start time in the force history resend modal', function (
     $this->actingAs($user);
 
     Livewire::test(ManageDevices::class)
+        ->selectTableRecords([$device->id])
         ->callAction(
-            TestAction::make('forceResendAllAttendance')->table($device),
+            TestAction::make('forceResendAllAttendance')->table()->bulk(),
             data: [
                 'start_time' => '2026-09-01 00:00:00',
                 'end_time' => '2026-10-06 09:36:04',
@@ -211,8 +218,8 @@ it('accepts an earlier start time in the force history resend modal', function (
 
     $this->assertDatabaseHas('device_commands', [
         'device_id' => $device->id,
-        'query_start_time' => '2026-09-01 00:00:00',
-        'query_end_time' => '2026-10-06 09:36:04',
+        'query_start_time' => '2026-09-01 03:00:00',
+        'query_end_time' => '2026-10-06 12:36:04',
     ]);
 });
 
@@ -222,8 +229,9 @@ it('rejects a start time after the end time in the force history resend modal', 
     $this->actingAs($user);
 
     Livewire::test(ManageDevices::class)
+        ->selectTableRecords([$device->id])
         ->callAction(
-            TestAction::make('forceResendAllAttendance')->table($device),
+            TestAction::make('forceResendAllAttendance')->table()->bulk(),
             data: [
                 'start_time' => '2026-10-07 09:36:04',
                 'end_time' => '2026-10-06 09:36:04',
@@ -235,6 +243,105 @@ it('rejects a start time after the end time in the force history resend modal', 
         ]);
 
     $this->assertDatabaseCount('device_commands', 0);
+});
+
+it('queues an attendance command for every selected device', function () {
+    $user = User::factory()->create();
+    $devices = Device::factory()->count(2)->create();
+    $this->actingAs($user);
+
+    Livewire::test(ManageDevices::class)
+        ->selectTableRecords($devices->modelKeys())
+        ->callAction(TestAction::make('requestAttendance')->table()->bulk(), data: [
+            'start_time' => '2026-10-01 00:00:00',
+            'end_time' => '2026-10-06 12:00:00',
+        ])
+        ->assertHasNoFormErrors();
+
+    $this->assertDatabaseCount('device_commands', 2);
+});
+
+it('updates boolean resource columns through table switches', function () {
+    $this->actingAs(User::factory()->create());
+    $company = Company::factory()->create(['is_active' => true]);
+    $employee = Employee::factory()->create(['company_id' => $company->id, 'is_active' => true]);
+    $device = Device::factory()->create(['company_id' => $company->id, 'is_enabled' => true]);
+
+    Livewire::test(ManageCompanies::class)
+        ->call('updateTableColumnState', 'is_active', (string) $company->id, false);
+    Livewire::test(ManageEmployees::class)
+        ->call('updateTableColumnState', 'is_active', (string) $employee->id, false);
+    Livewire::test(ManageDevices::class)
+        ->call('updateTableColumnState', 'is_enabled', (string) $device->id, false);
+
+    expect($company->fresh()->is_active)->toBeFalse()
+        ->and($employee->fresh()->is_active)->toBeFalse()
+        ->and($device->fresh()->is_enabled)->toBeFalse();
+});
+
+it('renders the Arabic panel in right-to-left mode when Arabic is selected', function () {
+    $response = $this->withSession(['filament_locale' => 'ar'])->get('/admin/login');
+
+    $response->assertOk()
+        ->assertSee('بوابة ADMS')
+        ->assertSee('lang="ar"', escape: false)
+        ->assertSee('dir="rtl"', escape: false);
+});
+
+it('shows a visible language switcher in the authenticated admin top bar', function () {
+    app()->setLocale('en');
+    $this->actingAs(User::factory()->create());
+
+    $html = view('filament.partials.language-switcher')->render();
+
+    expect($html)->toContain('adms-language-switcher')
+        ->and($html)->toContain('name="locale" value="en"')
+        ->and($html)->toContain('name="locale" value="ar"')
+        ->and($html)->toContain('>EN</button>')
+        ->and($html)->toContain('>عربي</button>');
+});
+
+it('stores the selected admin language in the session', function () {
+    $this->actingAs(User::factory()->create())
+        ->from('/admin')
+        ->post('/admin/language', ['locale' => 'ar'])
+        ->assertRedirect('/admin')
+        ->assertSessionHas('filament_locale', 'ar');
+});
+
+it('derives device online status from the configurable last seen window', function () {
+    config(['services.adms.device_online_window_minutes' => 5]);
+
+    $onlineDevice = Device::factory()->create();
+    $onlineDevice->forceFill(['last_seen_at' => now()->subMinutes(4)])->save();
+    $offlineDevice = Device::factory()->create();
+    $offlineDevice->forceFill(['last_seen_at' => now()->subMinutes(6)])->save();
+    $neverSeenDevice = Device::factory()->create();
+
+    expect($onlineDevice->isOnline())->toBeTrue()
+        ->and($offlineDevice->isOnline())->toBeFalse()
+        ->and($neverSeenDevice->isOnline())->toBeFalse();
+});
+
+it('localizes resource labels and navigation in Arabic', function () {
+    app()->setLocale('ar');
+    $groups = collect(filament()->getPanel('admin')->getNavigationGroups())
+        ->map(fn ($group): ?string => $group instanceof NavigationGroup ? $group->getLabel() : $group);
+
+    expect($groups)->toContain('الأجهزة')
+        ->and(DeviceResource::getPluralModelLabel())->toBe('الأجهزة')
+        ->and(__('filament/resources/devices.columns.serial_number'))->toBe('الرقم التسلسلي');
+});
+
+it('translates attendance status codes using the active panel language', function () {
+    app()->setLocale('en');
+
+    expect(AttendanceStatus::label('0'))->toBe('Check-in');
+
+    app()->setLocale('ar');
+
+    expect(AttendanceStatus::label('0'))->toBe('تسجيل حضور')
+        ->and(AttendanceStatus::label('99'))->toBe('حالة غير مصنفة (99)');
 });
 
 it('records a successful device wake-up while keeping the command queued for polling', function () {

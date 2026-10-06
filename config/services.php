@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'adms' => [
+        'device_online_window_minutes' => (int) env('ADMS_DEVICE_ONLINE_WINDOW_MINUTES', 5),
+    ],
+
 ];
