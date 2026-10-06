@@ -5,21 +5,57 @@ namespace App\Services\Adms;
 use App\Models\Device;
 use App\Models\DeviceCommand;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class DeviceCommandService
 {
-    public function requestAttendance(Device $device, User $user): DeviceCommand
+    public function __construct(private DeviceCommandWaker $waker) {}
+
+    public function requestAttendance(Device $device, User $user, string $startTime, string $endTime): DeviceCommand
     {
+        $deviceTimezone = new \DateTimeZone($device->timezone);
+        $queryStart = CarbonImmutable::parse($startTime, config('app.timezone'))->setTimezone($deviceTimezone);
+        $queryEnd = CarbonImmutable::parse($endTime, config('app.timezone'))->setTimezone($deviceTimezone);
+
+        return $this->queueAttendanceQuery($device, $user, $queryStart, $queryEnd, 'request_attendance');
+    }
+
+    public function forceResendAllAttendance(Device $device, User $user, string $startTime, string $endTime): DeviceCommand
+    {
+        $deviceTimezone = new \DateTimeZone($device->timezone);
+        $queryStart = CarbonImmutable::parse($startTime, config('app.timezone'))->setTimezone($deviceTimezone);
+        $queryEnd = CarbonImmutable::parse($endTime, config('app.timezone'))->setTimezone($deviceTimezone);
+
+        return $this->queueAttendanceQuery($device, $user, $queryStart, $queryEnd, 'force_resend_attendance');
+    }
+
+    private function queueAttendanceQuery(
+        Device $device,
+        User $user,
+        CarbonImmutable $queryStart,
+        CarbonImmutable $queryEnd,
+        string $type,
+    ): DeviceCommand {
         $device->loadMissing('company');
         if (! $device->is_enabled || ! $device->company?->is_active) {
             throw new \DomainException('Only enabled devices in active companies can receive commands.');
         }
 
-        return DB::transaction(function () use ($device, $user): DeviceCommand {
+        if ($queryStart->greaterThan($queryEnd)) {
+            throw new \InvalidArgumentException('The attendance query start must be before its end.');
+        }
+
+        $queryStartValue = $queryStart->format('Y-m-d H:i:s');
+        $queryEndValue = $queryEnd->format('Y-m-d H:i:s');
+        $wirePayload = "DATA QUERY ATTLOG StartTime={$queryStartValue}\tEndTime={$queryEndValue}";
+
+        $command = DB::transaction(function () use ($device, $user, $queryStartValue, $queryEndValue, $wirePayload, $type): DeviceCommand {
             $lockedDevice = Device::query()->lockForUpdate()->findOrFail($device->id);
             $active = $lockedDevice->commands()
-                ->whereIn('status', ['pending', 'offered', 'unknown'])
+                ->whereIn('status', ['pending', 'offered', 'unknown', 'attendance_received'])
                 ->where('expires_at', '>', now())
                 ->exists();
 
@@ -35,14 +71,32 @@ class DeviceCommandService
 
             return $lockedDevice->commands()->create([
                 'requested_by' => $user->id,
-                'type' => 'request_attendance',
+                'type' => $type,
                 'wire_command_id' => $wireId,
-                'wire_payload' => 'DATA QUERY ATTLOG',
+                'wire_payload' => $wirePayload,
+                'query_start_time' => $queryStartValue,
+                'query_end_time' => $queryEndValue,
                 'status' => 'pending',
                 'requested_at' => now(),
-                'expires_at' => now()->addMinutes(10),
+                'expires_at' => now()->addDay(),
             ]);
         });
+
+        try {
+            $this->waker->wake($device);
+            $command->forceFill(['wake_sent_at' => now(), 'wake_error' => null])->save();
+        } catch (Throwable $exception) {
+            $command->forceFill(['wake_error' => mb_substr($exception->getMessage(), 0, 512)])->save();
+            Log::warning('Device command queued but the UDP wake-up packet could not be sent.', [
+                'command_id' => $command->id,
+                'device_id' => $device->id,
+                'exception' => $exception::class,
+            ]);
+        }
+
+        $command->refresh();
+
+        return $command;
     }
 
     public function offerNext(Device $device): string
@@ -98,14 +152,14 @@ class DeviceCommandService
             throw new \InvalidArgumentException('Command result does not match this device.');
         }
 
-        if (! in_array($command->status, ['offered', 'unknown', 'acknowledged', 'failed'], true)) {
-            throw new \InvalidArgumentException('Command result arrived before the command was offered.');
+        if (! in_array($command->status, ['pending', 'offered', 'unknown', 'acknowledged', 'attendance_received', 'failed'], true)) {
+            throw new \InvalidArgumentException('Command result does not match an active or completed command.');
         }
 
         $history = $command->result_history ?? [];
         $history[] = ['received_at' => now()->toISOString(), 'source_ip' => $sourceIp, 'body' => $body];
         $hasExistingResult = $command->result_received_at !== null;
-        $status = $hasExistingResult
+        $status = $hasExistingResult || $command->status === 'attendance_received'
             ? $command->status
             : (($result['Return'] ?? null) === '0' ? 'acknowledged' : 'failed');
 

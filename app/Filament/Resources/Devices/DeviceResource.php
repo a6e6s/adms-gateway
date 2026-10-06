@@ -9,6 +9,7 @@ use App\Services\Adms\DeviceCommandService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -63,16 +64,100 @@ class DeviceResource extends Resource
                     ->label('Request stored attendance')
                     ->icon(Heroicon::OutlinedArrowDownTray)
                     ->requiresConfirmation()
-                    ->modalDescription('The request is delivered the next time the device polls /iclock/getrequest. Any returned records are saved and processed asynchronously.')
-                    ->action(function (Device $record, DeviceCommandService $commands): void {
+                    ->modalDescription('Choose a range in the device local timezone. The default range requests stored attendance from 2000 through now. The command is delivered on the next /iclock/getrequest poll; matching uploaded records are linked to this request and processed asynchronously.')
+                    ->fillForm(fn (Device $record): array => [
+                        'start_time' => now($record->timezone)->setDate(2000, 1, 1)->startOfDay()->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s'),
+                        'end_time' => now()->format('Y-m-d H:i:s'),
+                    ])
+                    ->schema([
+                        DateTimePicker::make('start_time')
+                            ->label(fn (Device $record): string => "Start time ({$record->timezone})")
+                            ->native(false)
+                            ->timezone(fn (Device $record): string => $record->timezone)
+                            ->displayFormat('d/m/Y H:i:s')
+                            ->seconds()
+                            ->required()
+                            ->beforeOrEqual('end_time'),
+                        DateTimePicker::make('end_time')
+                            ->label(fn (Device $record): string => "End time ({$record->timezone})")
+                            ->native(false)
+                            ->timezone(fn (Device $record): string => $record->timezone)
+                            ->displayFormat('d/m/Y H:i:s')
+                            ->seconds()
+                            ->required()
+                            ->afterOrEqual('start_time'),
+                    ])
+                    ->action(function (array $data, Device $record, DeviceCommandService $commands): void {
                         $user = auth()->user();
                         if (! $user instanceof User) {
                             return;
                         }
 
                         try {
-                            $commands->requestAttendance($record, $user);
-                            Notification::make()->title('Attendance request waiting for device poll')->success()->send();
+                            $command = $commands->requestAttendance($record, $user, $data['start_time'], $data['end_time']);
+                            $notification = Notification::make()->title($command->wake_sent_at !== null
+                                ? 'Wake-up packet sent; waiting for device poll'
+                                : 'Attendance request queued; waiting for device poll');
+
+                            if ($command->wake_sent_at !== null) {
+                                $notification->success();
+                            } else {
+                                $notification->warning();
+                            }
+
+                            $notification->send();
+                        } catch (\DomainException $exception) {
+                            Notification::make()->title($exception->getMessage())->danger()->send();
+                        }
+                    }),
+                Action::make('forceResendAllAttendance')
+                    ->label('Force full history resend')
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Resend stored attendance for this date range?')
+                    ->modalDescription('Queues an ATTLOG query in the device timezone. The device receives it on its next /iclock/getrequest poll. Existing attendance punches are deduplicated during processing.')
+                    ->fillForm(fn (Device $record): array => [
+                        'start_time' => now($record->timezone)->setDate(2000, 1, 1)->startOfDay()->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s'),
+                        'end_time' => now()->format('Y-m-d H:i:s'),
+                    ])
+                    ->schema([
+                        DateTimePicker::make('start_time')
+                            ->label(fn (Device $record): string => "Start time ({$record->timezone})")
+                            ->native(false)
+                            ->timezone(fn (Device $record): string => $record->timezone)
+                            ->displayFormat('d/m/Y H:i:s')
+                            ->seconds()
+                            ->required()
+                            ->beforeOrEqual('end_time'),
+                        DateTimePicker::make('end_time')
+                            ->label(fn (Device $record): string => "End time ({$record->timezone})")
+                            ->native(false)
+                            ->timezone(fn (Device $record): string => $record->timezone)
+                            ->displayFormat('d/m/Y H:i:s')
+                            ->seconds()
+                            ->required()
+                            ->afterOrEqual('start_time'),
+                    ])
+                    ->action(function (array $data, Device $record, DeviceCommandService $commands): void {
+                        $user = auth()->user();
+                        if (! $user instanceof User) {
+                            return;
+                        }
+
+                        try {
+                            $command = $commands->forceResendAllAttendance($record, $user, $data['start_time'], $data['end_time']);
+                            $notification = Notification::make()->title($command->wake_sent_at !== null
+                                ? 'Wake-up packet sent; waiting for device poll'
+                                : 'Attendance resend queued; waiting for device poll');
+
+                            if ($command->wake_sent_at !== null) {
+                                $notification->success();
+                            } else {
+                                $notification->warning();
+                            }
+
+                            $notification->send();
                         } catch (\DomainException $exception) {
                             Notification::make()->title($exception->getMessage())->danger()->send();
                         }

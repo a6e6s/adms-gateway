@@ -4,7 +4,9 @@ namespace App\Jobs;
 
 use App\Models\AttendancePunch;
 use App\Models\AttendanceUpload;
+use App\Models\DeviceCommand;
 use App\Models\DeviceEmployee;
+use App\Models\Employee;
 use App\Services\Adms\AttendanceIdentity;
 use App\Services\Adms\AttendancePayloadParser;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -53,14 +55,39 @@ class ProcessAttendanceUpload implements ShouldQueue
 
         try {
             $upload = AttendanceUpload::query()->with('device')->findOrFail($this->uploadId);
+            $queryCommands = DeviceCommand::query()
+                ->where('device_id', $upload->device_id)
+                ->whereIn('type', ['request_attendance', 'force_resend_attendance'])
+                ->whereNotNull('offered_at')
+                ->whereNotNull('query_start_time')
+                ->whereNotNull('query_end_time')
+                ->where('offered_at', '<=', $upload->received_at)
+                ->whereIn('status', ['offered', 'unknown', 'acknowledged', 'attendance_received'])
+                ->orderByDesc('offered_at')
+                ->get();
             $deviceEmployees = DeviceEmployee::query()->where('device_id', $upload->device_id)
                 ->get()->keyBy('pin');
             $chunk = [];
             $errors = $upload->errors ?? [];
+            $matchedCommandId = $upload->device_command_id;
 
             foreach ($parser->rows($upload->raw_payload, $upload->device_timezone) as $row) {
                 if ($row['line'] <= $upload->checkpoint_line) {
                     continue;
+                }
+
+                if ($row['error'] === null && $matchedCommandId === null) {
+                    foreach ($queryCommands as $queryCommand) {
+                        if ($row['fields'][1] >= $queryCommand->query_start_time
+                            && $row['fields'][1] <= $queryCommand->query_end_time) {
+                            $matchedCommandId = $queryCommand->id;
+                            AttendanceUpload::query()->whereKey($upload->id)
+                                ->where('processing_token', $token)
+                                ->update(['device_command_id' => $matchedCommandId]);
+
+                            break;
+                        }
+                    }
                 }
 
                 $chunk[] = $row;
@@ -77,6 +104,7 @@ class ProcessAttendanceUpload implements ShouldQueue
             }
 
             AttendanceUpload::query()->whereKey($upload->id)->where('processing_token', $token)->update([
+                'device_command_id' => $matchedCommandId,
                 'status' => $upload->rejected_rows > 0 ? 'processed_with_errors' : 'processed',
                 'processed_at' => now(),
                 'processing_token' => null,
@@ -84,6 +112,12 @@ class ProcessAttendanceUpload implements ShouldQueue
                 'errors' => json_encode($errors, JSON_THROW_ON_ERROR),
                 'updated_at' => now(),
             ]);
+
+            if ($matchedCommandId !== null) {
+                DeviceCommand::query()->whereKey($matchedCommandId)
+                    ->whereIn('status', ['offered', 'unknown', 'acknowledged', 'attendance_received'])
+                    ->update(['status' => 'attendance_received', 'updated_at' => now()]);
+            }
         } catch (Throwable $exception) {
             AttendanceUpload::query()->whereKey($this->uploadId)->where('processing_token', $token)->update([
                 'status' => 'pending',
@@ -127,12 +161,44 @@ class ProcessAttendanceUpload implements ShouldQueue
 
                 $fields = $row['fields'];
                 $deduplicationHash = $identity->hash($upload->device_id, $fields);
+                $deviceEmployee = $deviceEmployees->get($fields[0]);
+
+                if ($deviceEmployee === null) {
+                    $employee = Employee::query()->firstOrCreate(
+                        [
+                            'company_id' => $upload->company_id,
+                            'employee_number' => $fields[0],
+                        ],
+                        [
+                            'name' => "Device PIN {$fields[0]}",
+                            'is_active' => true,
+                        ],
+                    );
+                    $deviceEmployee = DeviceEmployee::query()->firstOrCreate(
+                        [
+                            'device_id' => $upload->device_id,
+                            'pin' => $fields[0],
+                        ],
+                        ['employee_id' => $employee->id],
+                    );
+                    $deviceEmployees->put($fields[0], $deviceEmployee);
+
+                    AttendancePunch::query()
+                        ->where('device_id', $upload->device_id)
+                        ->where('pin', $fields[0])
+                        ->whereNull('device_employee_id')
+                        ->update([
+                            'device_employee_id' => $deviceEmployee->id,
+                            'updated_at' => now(),
+                        ]);
+                }
+
                 $occurredAt = new \DateTimeImmutable($fields[1], new \DateTimeZone($upload->device_timezone));
                 $attributes = [
                     'company_id' => $upload->company_id,
                     'device_id' => $upload->device_id,
                     'attendance_upload_id' => $upload->id,
-                    'device_employee_id' => $deviceEmployees->get($fields[0])?->id,
+                    'device_employee_id' => $deviceEmployee->id,
                     'pin' => $fields[0],
                     'occurred_at_local' => $fields[1],
                     'occurred_at_utc' => $occurredAt->setTimezone(new \DateTimeZone('UTC')),
@@ -148,6 +214,14 @@ class ProcessAttendanceUpload implements ShouldQueue
                 ];
 
                 if (AttendancePunch::query()->where('device_id', $upload->device_id)->where('deduplication_hash', $deduplicationHash)->exists()) {
+                    AttendancePunch::query()
+                        ->where('device_id', $upload->device_id)
+                        ->where('deduplication_hash', $deduplicationHash)
+                        ->whereNull('device_employee_id')
+                        ->update([
+                            'device_employee_id' => $deviceEmployee->id,
+                            'updated_at' => now(),
+                        ]);
                     $duplicates++;
 
                     continue;
