@@ -6,3 +6,44 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+[data-scroll-progress] {
+    transform: scaleX(0);
+}
+
+[data-landing-page] a:focus-visible,
+[data-landing-page] summary:focus-visible {
+    outline: 3px solid #0d9488;
+    outline-offset: 5px;
+}
+
+[data-landing-page] summary::-webkit-details-marker {
+    display: none;
+}
+
+[data-landing-page] details[open] .faq-plus {
+    transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    html:has([data-landing-page]) {
+        scroll-behavior: smooth;
+    }
+
+    .landing-card {
+        transition: border-color 200ms, box-shadow 200ms;
+    }
+
+    .landing-card:hover {
+        border-color: #5eead4;
+        box-shadow: 0 12px 30px -18px rgb(15 118 110 / 35%);
+    }
+
+    .faq-plus {
+        transition: transform 200ms;
+    }
+
+    [data-landing-page] a {
+        transition: background-color 200ms, color 200ms;
+    }
+}
