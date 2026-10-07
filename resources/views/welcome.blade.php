@@ -6,6 +6,9 @@
     <meta name="description" content="بوابة ADMS من JIT لجمع سجلات الحضور من أجهزة ZKTeco، إدارة الأجهزة، وربط بيانات الحضور بأنظمة الموارد البشرية.">
     <meta name="theme-color" content="#009d99">
     <title>JIT | بوابة ADMS لإدارة بيانات الحضور</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body data-landing-page class="bg-[#f7f9f8] text-slate-800 antialiased">
