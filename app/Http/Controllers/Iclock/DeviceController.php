@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Iclock;
 
 use App\Http\Controllers\Controller;
 use App\Models\Device;
+use App\Models\DiscoveredDevice;
 use App\Services\Adms\AcceptAttendanceUpload;
 use App\Services\Adms\DeviceCommandService;
 use Illuminate\Http\Request;
@@ -144,6 +145,10 @@ class DeviceController extends Controller
             $device = $matches->count() === 1 ? $matches->first() : null;
         }
 
+        if ($device === null) {
+            $this->recordDiscovery($request, $serial);
+        }
+
         if ($device === null || ! $device->is_enabled || ! $device->company?->is_active) {
             return $this->plain('Unknown device', SymfonyResponse::HTTP_FORBIDDEN);
         }
@@ -153,6 +158,28 @@ class DeviceController extends Controller
         }
 
         return $device;
+    }
+
+    private function recordDiscovery(Request $request, mixed $serial): void
+    {
+        if (! is_string($serial) || $serial === '' || mb_strlen($serial) > 100 || preg_match('/[\x00-\x20\x7f]/', $serial)) {
+            return;
+        }
+
+        $discovery = DiscoveredDevice::query()->firstOrCreate(
+            ['serial_number' => $serial],
+            ['first_seen_at' => now(), 'last_seen_at' => now()],
+        );
+        $attributes = ['last_seen_at' => now(), 'last_seen_ip' => $request->ip()];
+
+        foreach (['pushver' => 'push_version', 'DeviceType' => 'device_type'] as $parameter => $attribute) {
+            $value = $request->query($parameter);
+            if (is_string($value) && $value !== '') {
+                $attributes[$attribute] = mb_substr($value, 0, $attribute === 'push_version' ? 40 : 80);
+            }
+        }
+
+        DiscoveredDevice::query()->whereKey($discovery->getKey())->increment('attempt_count', 1, $attributes);
     }
 
     private function touch(Device $device, Request $request, bool $commandPoll = false): void
