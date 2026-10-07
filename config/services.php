@@ -36,6 +36,8 @@ return [
     ],
 
     'adms' => [
+        'dashboard_timezone' => env('ADMS_DASHBOARD_TIMEZONE', 'Asia/Riyadh'),
+        'pending_upload_warning_minutes' => (int) env('ADMS_PENDING_UPLOAD_WARNING_MINUTES', 5),
         'device_online_window_minutes' => (int) env('ADMS_DEVICE_ONLINE_WINDOW_MINUTES', 5),
     ],
 

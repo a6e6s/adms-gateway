@@ -38,3 +38,21 @@ it('denies access to unconfigured panels even for a super admin', function () {
 
     expect($user->canAccessPanel(Panel::make()->id('other')))->toBeFalse();
 });
+
+it('keeps a database backed local admin session authenticated across refreshes', function () {
+    config(['app.env' => 'local', 'session.driver' => 'database']);
+    $user = User::factory()->create();
+    $user->assignRole(Role::create(['name' => 'super_admin', 'guard_name' => 'web']));
+    $loginKey = auth('web')->getName();
+
+    $response = $this->withSession([$loginKey => $user->id])
+        ->get(route('filament.admin.pages.dashboard'))->assertOk();
+    $sessionCookie = collect($response->headers->getCookies())
+        ->first(fn ($cookie) => $cookie->getName() === config('session.cookie'));
+    $this->app['auth']->forgetGuards();
+
+    $this->withUnencryptedCookie($sessionCookie->getName(), $sessionCookie->getValue())
+        ->get(route('filament.admin.pages.dashboard'))->assertOk();
+    $this->app['auth']->forgetGuards();
+    $this->get(route('filament.admin.pages.dashboard'))->assertOk();
+});
