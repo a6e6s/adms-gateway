@@ -71,7 +71,7 @@ class AdminPanelProvider extends PanelProvider
                 SetFilamentLocale::class,
             ], isPersistent: true)
             ->plugins([
-                FilamentShieldPlugin::make(),
+                FilamentShieldPlugin::make()->globallySearchable(false),
             ])
             ->authMiddleware([
                 Authenticate::class,
