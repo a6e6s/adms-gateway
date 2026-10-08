@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Filament\Panel;
+use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
@@ -55,4 +56,38 @@ it('keeps a database backed local admin session authenticated across refreshes',
         ->get(route('filament.admin.pages.dashboard'))->assertOk();
     $this->app['auth']->forgetGuards();
     $this->get(route('filament.admin.pages.dashboard'))->assertOk();
+});
+
+it('keeps the admin session authenticated after a livewire dashboard interaction', function () {
+    config(['app.env' => 'local', 'session.driver' => 'database']);
+    $user = User::factory()->create();
+    $user->assignRole(Role::create(['name' => 'super_admin', 'guard_name' => 'web']));
+
+    $page = $this->withSession([auth('web')->getName() => $user->id])
+        ->get(route('filament.admin.pages.dashboard'))->assertOk();
+    $sessionId = session()->getId();
+    preg_match('/wire:snapshot="([^"]+)"/', $page->getContent(), $matches);
+    $snapshot = html_entity_decode($matches[1], ENT_QUOTES);
+    $cookieName = config('session.cookie');
+    $cookie = collect($page->headers->getCookies())->first(fn ($cookie) => $cookie->getName() === $cookieName);
+    $this->app['auth']->forgetGuards();
+    $this->app['session']->forgetDrivers();
+
+    $interaction = $this->withUnencryptedCookie($cookieName, $cookie->getValue())
+        ->withCredentials()
+        ->withHeader('X-Livewire', 'true')
+        ->postJson(Livewire::getUpdateUri(), [
+            'components' => [[
+                'snapshot' => $snapshot,
+                'updates' => [],
+                'calls' => [['path' => '', 'method' => '$refresh', 'params' => []]],
+            ]],
+        ])->assertOk();
+    expect(session()->getId())->toBe($sessionId);
+    $cookie = collect($interaction->headers->getCookies())->first(fn ($cookie) => $cookie->getName() === $cookieName);
+    $this->app['auth']->forgetGuards();
+    $this->app['session']->forgetDrivers();
+
+    $this->withUnencryptedCookie($cookieName, $cookie->getValue())
+        ->get(route('filament.admin.pages.dashboard'))->assertOk();
 });

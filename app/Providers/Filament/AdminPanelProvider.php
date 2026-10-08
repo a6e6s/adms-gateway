@@ -44,7 +44,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()->label(fn (): string => __('filament.navigation.groups.people')),
                 NavigationGroup::make()->label(fn (): string => __('filament.navigation.groups.devices')),
             ])
-            ->renderHook(PanelsRenderHook::TOPBAR_START, fn () => view('filament.partials.topbar-notification'))
+            // ->renderHook(PanelsRenderHook::TOPBAR_START, fn () => view('filament.partials.topbar-notification'))
             ->renderHook(PanelsRenderHook::USER_MENU_BEFORE, fn () => view('filament.partials.language-switcher'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
@@ -56,12 +56,13 @@ class AdminPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
-                AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 PreventRequestForgery::class,
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+            ])
+            ->middleware([
                 SetFilamentLocale::class,
             ], isPersistent: true)
             ->plugins([
@@ -69,6 +70,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+                AuthenticateSession::class,
+            ], isPersistent: true);
     }
 }
