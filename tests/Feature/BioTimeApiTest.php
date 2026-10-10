@@ -363,3 +363,10 @@ it('accepts both authorization schemes and preserves company isolation', functio
     $this->get('/iclock/api/transactions/'.$foreignPunch->id.'/')
         ->assertNotFound()->assertExactJson(['detail' => 'Not found.']);
 })->with(['Token', 'jwt', 'JWT']);
+
+it('keeps the documentation configuration serializable for deployment', function () {
+    $configuration = require config_path('scramble.php');
+    $serializedConfiguration = var_export($configuration, true);
+
+    expect(eval('return '.$serializedConfiguration.';'))->toBe($configuration);
+});

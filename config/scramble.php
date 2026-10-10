@@ -1,9 +1,7 @@
 <?php
 
-use App\Http\Middleware\AuthenticateBioTimeClient;
 use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
 use Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy;
-use Dedoc\Scramble\Support\Generator\SecurityScheme;
 
 return [
     /*
@@ -183,13 +181,5 @@ return [
      * ],
      */
     // 'security_strategy' => \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
-    'security_strategy' => [
-        MiddlewareAuthSecurityStrategy::class,
-        [
-            'middleware' => [AuthenticateBioTimeClient::class],
-            'scheme' => SecurityScheme::apiKey('header', 'Authorization')
-                ->as('BioTimeToken')
-                ->setDescription('Enter jwt or Token followed by a space and the token returned by POST /jwt-api-token-auth/. Example: jwt <your-token>.'),
-        ],
-    ],
+    'security_strategy' => MiddlewareAuthSecurityStrategy::class,
 ];

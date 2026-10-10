@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\AuthenticateBioTimeClient;
 use Carbon\CarbonImmutable;
+use Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -18,7 +21,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(MiddlewareAuthSecurityStrategy::class, fn (): MiddlewareAuthSecurityStrategy => new MiddlewareAuthSecurityStrategy(
+            middleware: [AuthenticateBioTimeClient::class],
+            scheme: SecurityScheme::apiKey('header', 'Authorization')
+                ->as('BioTimeToken')
+                ->setDescription('Enter jwt or Token followed by a space and the token returned by POST /jwt-api-token-auth/. Example: jwt <your-token>.'),
+        ));
     }
 
     /**
