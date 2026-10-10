@@ -25,7 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(ThrottleRequests::class, AuthenticateBioTimeClient::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $isBioTimeRequest = fn (Request $request): bool => $request->is('api-token-auth', 'iclock/api/*');
+        $isBioTimeRequest = fn (Request $request): bool => $request->is('jwt-api-token-auth', 'iclock/api/*');
 
         $exceptions->render(function (ValidationException $exception, Request $request) use ($isBioTimeRequest) {
             if ($isBioTimeRequest($request)) {

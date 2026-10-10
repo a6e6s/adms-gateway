@@ -6,14 +6,17 @@ use App\Filament\Resources\Companies\Pages\ManageCompanies;
 use App\Filament\Resources\CompanyScopedResource;
 use App\Models\Company;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
 class CompanyResource extends CompanyScopedResource
@@ -67,7 +70,42 @@ class CompanyResource extends CompanyScopedResource
             ->filters([
                 //
             ])
-            ->recordActions([EditAction::make()])
+            ->recordActions([
+                EditAction::make(),
+                Action::make('createApiClient')
+                    ->label(__('filament/resources/companies.api_client.create'))
+                    ->modalHeading(fn (Company $record): string => __('filament/resources/companies.api_client.heading', ['company' => $record->name]))
+                    ->modalDescription(__('filament/resources/companies.api_client.instructions'))
+                    ->visible(fn (Company $record): bool => $record->is_active && static::canEdit($record))
+                    ->schema([
+                        TextInput::make('username')
+                            ->label(__('filament/resources/companies.api_client.username'))
+                            ->required()->maxLength(150)->regex('/^\\S+$/u')
+                            ->unique(table: 'bio_time_clients', column: 'username', ignoreRecord: false),
+                        TextInput::make('password')
+                            ->label(__('filament/resources/companies.api_client.password'))
+                            ->password()->required()->minLength(12)->maxLength(4096)->confirmed(),
+                        TextInput::make('password_confirmation')
+                            ->label(__('filament/resources/companies.api_client.password_confirmation'))
+                            ->password()->required()->dehydrated(false),
+                    ])
+                    ->action(function (Company $record, array $data): void {
+                        $record->refresh();
+                        Gate::authorize('update', $record);
+                        abort_unless($record->is_active, 403);
+
+                        $record->bioTimeClients()->create([
+                            'username' => $data['username'],
+                            'password' => $data['password'],
+                            'is_active' => true,
+                        ]);
+
+                        Notification::make()
+                            ->title(__('filament/resources/companies.api_client.created'))
+                            ->body(__('filament/resources/companies.api_client.instructions'))
+                            ->success()->persistent()->send();
+                    }),
+            ])
             ->toolbarActions([]);
     }
 

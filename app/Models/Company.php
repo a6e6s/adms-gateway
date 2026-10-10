@@ -26,6 +26,12 @@ class Company extends Model
         return $this->belongsToMany(User::class)->withTimestamps();
     }
 
+    /** @return HasMany<BioTimeClient, $this> */
+    public function bioTimeClients(): HasMany
+    {
+        return $this->hasMany(BioTimeClient::class);
+    }
+
     /** @return HasMany<Device, $this> */
     public function devices(): HasMany
     {

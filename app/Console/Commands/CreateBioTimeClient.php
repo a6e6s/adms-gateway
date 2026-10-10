@@ -54,7 +54,7 @@ class CreateBioTimeClient extends Command
             'is_active' => true,
         ]);
 
-        $this->info('API client created. Obtain its token through /api-token-auth/.');
+        $this->info('API client created. Obtain its token through /jwt-api-token-auth/.');
 
         return self::SUCCESS;
     }

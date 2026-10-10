@@ -7,13 +7,14 @@ use App\Models\Company;
 use App\Models\Device;
 use App\Models\DeviceEmployee;
 use App\Models\Employee;
+use Dedoc\Scramble\Generator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 it('returns a stable general token using connector credentials without browser headers', function () {
     $client = BioTimeClient::factory()->create(['username' => 'erp']);
 
-    $response = $this->post('/api-token-auth/', ['username' => 'erp', 'password' => 'connector-password']);
+    $response = $this->post('/jwt-api-token-auth/', ['username' => 'erp', 'password' => 'connector-password']);
 
     $response->assertOk()->assertExactJson(['token' => $client->token])->assertHeader('Cache-Control', 'no-store, private');
     expect(Hash::check('connector-password', $client->password))->toBeTrue();
@@ -22,7 +23,7 @@ it('returns a stable general token using connector credentials without browser h
 });
 
 it('returns 400 field errors for missing login credentials', function () {
-    $this->post('/api-token-auth/', [])
+    $this->post('/jwt-api-token-auth/', [])
         ->assertBadRequest()->assertExactJson([
             'username' => ['The username field is required.'],
             'password' => ['The password field is required.'],
@@ -32,7 +33,7 @@ it('returns 400 field errors for missing login credentials', function () {
 it('returns 400 for invalid credentials without returning a token', function () {
     $client = BioTimeClient::factory()->create();
 
-    $this->postJson('/api-token-auth/', ['username' => $client->username, 'password' => 'wrong'])
+    $this->postJson('/jwt-api-token-auth/', ['username' => $client->username, 'password' => 'wrong'])
         ->assertBadRequest()->assertExactJson(['non_field_errors' => ['Unable to log in with provided credentials.']]);
 });
 
@@ -61,7 +62,7 @@ it('revokes token access and login when the client or company is inactive', func
 
     $this->withHeader('Authorization', 'Token '.$client->token)->get('/iclock/api/transactions/')
         ->assertUnauthorized();
-    $this->postJson('/api-token-auth/', ['username' => $client->username, 'password' => 'connector-password'])
+    $this->postJson('/jwt-api-token-auth/', ['username' => $client->username, 'password' => 'connector-password'])
         ->assertBadRequest();
 })->with(['inactive client' => [false], 'inactive company' => [true]]);
 
@@ -294,10 +295,10 @@ it('returns 405 and preserves attendance when a client requests deletion', funct
 
 it('returns 429 with a DRF detail when token login is throttled', function () {
     for ($attempt = 0; $attempt < 10; $attempt++) {
-        $this->postJson('/api-token-auth/', [])->assertBadRequest();
+        $this->postJson('/jwt-api-token-auth/', [])->assertBadRequest();
     }
 
-    $this->postJson('/api-token-auth/', [])->assertStatus(429)->assertHeader('Retry-After')
+    $this->postJson('/jwt-api-token-auth/', [])->assertStatus(429)->assertHeader('Retry-After')
         ->assertExactJson(['detail' => 'Request was throttled.']);
 });
 
@@ -306,7 +307,7 @@ it('provisions a scoped client using a hidden password without printing secrets'
 
     $this->artisan('biotime:client-create', ['username' => 'erp', 'company' => $company->id])
         ->expectsQuestion('API client password', 'connector-password')
-        ->expectsOutput('API client created. Obtain its token through /api-token-auth/.')
+        ->expectsOutput('API client created. Obtain its token through /jwt-api-token-auth/.')
         ->assertExitCode(0);
 
     $this->assertDatabaseHas('bio_time_clients', ['username' => 'erp', 'company_id' => $company->id]);
@@ -319,4 +320,29 @@ it('refuses noninteractive credential creation without creating a default client
         ->expectsOutput('Interactive hidden password entry is required.')->assertExitCode(1);
 
     $this->assertDatabaseCount('bio_time_clients', 0);
+});
+
+it('documents the JWT token endpoint alongside transaction endpoints', function () {
+    $specification = app(Generator::class)();
+
+    expect($specification['paths'])->toHaveKeys([
+        '/jwt-api-token-auth',
+        '/iclock/api/transactions',
+        '/iclock/api/transactions/{id}',
+    ]);
+    expect($specification['paths']['/jwt-api-token-auth'])->toHaveKey('post');
+    expect($specification['paths'])->not->toHaveKey('/api-token-auth');
+});
+
+it('documents token authorization for transactions while leaving login public', function () {
+    $specification = app(Generator::class)();
+
+    expect($specification['components']['securitySchemes']['BioTimeToken'])
+        ->toMatchArray(['type' => 'apiKey', 'in' => 'header', 'name' => 'Authorization']);
+    expect($specification['security'])->toBe([['BioTimeToken' => []]]);
+    expect($specification['paths']['/jwt-api-token-auth']['post']['security'])->toBe([]);
+    foreach (['/iclock/api/transactions', '/iclock/api/transactions/{id}'] as $path) {
+        expect($specification['paths'][$path]['get']['security'] ?? $specification['security'])
+            ->toBe([['BioTimeToken' => []]]);
+    }
 });

@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Middleware\AuthenticateBioTimeClient;
 use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
+use Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 
 return [
     /*
@@ -19,7 +22,7 @@ return [
      * Override with `servers`, or use Scramble::registerApi() for separate bases.
      */
     'api_path' => [
-        'include' => ['api-token-auth', 'iclock/api'],
+        'include' => ['jwt-api-token-auth', 'iclock/api'],
     ],
 
     /*
@@ -52,7 +55,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'BioTime-compatible attendance API. Obtain a general token with POST /api-token-auth/ and send Authorization: Token <token> when reading transactions. Exact BioTime 8.5/9.0 compatibility is still being validated.',
+        'description' => 'BioTime-compatible attendance API. Obtain a general token with POST /jwt-api-token-auth/ and send Authorization: Token <token> when reading transactions. Exact BioTime 8.5/9.0 compatibility is still being validated.',
     ],
 
     'ui' => [
@@ -180,5 +183,13 @@ return [
      * ],
      */
     // 'security_strategy' => \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
-    'security_strategy' => null,
+    'security_strategy' => [
+        MiddlewareAuthSecurityStrategy::class,
+        [
+            'middleware' => [AuthenticateBioTimeClient::class],
+            'scheme' => SecurityScheme::apiKey('header', 'Authorization')
+                ->as('BioTimeToken')
+                ->setDescription('Enter Token followed by a space and the token returned by POST /jwt-api-token-auth/. Example: Token <your-token>.'),
+        ],
+    ],
 ];
