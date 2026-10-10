@@ -2,14 +2,17 @@
 
 namespace App\Filament\Resources\Employees;
 
+use App\Filament\Resources\CompanyScopedResource;
 use App\Filament\Resources\Employees\Pages\ManageEmployees;
+use App\Models\Company;
 use App\Models\Employee;
+use App\Services\CompanyAccess;
 use BackedEnum;
+use Closure;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -18,7 +21,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class EmployeeResource extends Resource
+class EmployeeResource extends CompanyScopedResource
 {
     protected static ?string $model = Employee::class;
 
@@ -47,7 +50,7 @@ class EmployeeResource extends Resource
     {
         return $schema
             ->components([
-                Select::make('company_id')->label(__('filament/resources/employees.fields.company'))->relationship('company', 'name')->required()->searchable()->preload(),
+                Select::make('company_id')->label(__('filament/resources/employees.fields.company'))->relationship('company', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))->rules([fn (): Closure => CompanyAccess::validationRule(Company::class)])->required()->searchable()->preload(),
                 TextInput::make('employee_number')->label(__('filament/resources/employees.fields.employee_number'))->required()->maxLength(100),
                 TextInput::make('name')->label(__('filament/resources/employees.fields.name'))->required()->maxLength(255),
                 Toggle::make('is_active')->label(__('filament/resources/employees.fields.is_active'))->required()->default(true),

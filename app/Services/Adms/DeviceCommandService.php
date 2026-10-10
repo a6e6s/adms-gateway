@@ -7,6 +7,7 @@ use App\Models\DeviceCommand;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -39,6 +40,7 @@ class DeviceCommandService
         CarbonImmutable $queryEnd,
         string $type,
     ): DeviceCommand {
+        Gate::forUser($user)->authorize('update', $device);
         $device->loadMissing('company');
         if (! $device->is_enabled || ! $device->company?->is_active) {
             throw new \DomainException('Only enabled devices in active companies can receive commands.');

@@ -2,12 +2,16 @@
 
 namespace App\Filament\Resources\DeviceEmployees;
 
+use App\Filament\Resources\CompanyScopedResource;
 use App\Filament\Resources\DeviceEmployees\Pages\ManageDeviceEmployees;
+use App\Models\Device;
 use App\Models\DeviceEmployee;
+use App\Models\Employee;
+use App\Services\CompanyAccess;
 use BackedEnum;
+use Closure;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -15,7 +19,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class DeviceEmployeeResource extends Resource
+class DeviceEmployeeResource extends CompanyScopedResource
 {
     protected static ?string $model = DeviceEmployee::class;
 
@@ -44,8 +48,8 @@ class DeviceEmployeeResource extends Resource
     {
         return $schema
             ->components([
-                Select::make('device_id')->label(__('filament/resources/device-employees.fields.device'))->relationship('device', 'serial_number')->required()->searchable()->preload(),
-                Select::make('employee_id')->label(__('filament/resources/device-employees.fields.employee'))->relationship('employee', 'name')->required()->searchable()->preload(),
+                Select::make('device_id')->label(__('filament/resources/device-employees.fields.device'))->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))->rules([fn (): Closure => CompanyAccess::validationRule(Device::class)])->required()->searchable()->preload(),
+                Select::make('employee_id')->label(__('filament/resources/device-employees.fields.employee'))->relationship('employee', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))->rules([fn (): Closure => CompanyAccess::validationRule(Employee::class)])->required()->searchable()->preload(),
                 TextInput::make('pin')->label(__('filament/resources/device-employees.fields.pin'))->required()->maxLength(100),
             ]);
     }

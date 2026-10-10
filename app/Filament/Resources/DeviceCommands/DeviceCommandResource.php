@@ -2,10 +2,10 @@
 
 namespace App\Filament\Resources\DeviceCommands;
 
+use App\Filament\Resources\CompanyScopedResource;
 use App\Filament\Resources\DeviceCommands\Pages\ManageDeviceCommands;
 use App\Models\DeviceCommand;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -13,7 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class DeviceCommandResource extends Resource
+class DeviceCommandResource extends CompanyScopedResource
 {
     protected static ?string $model = DeviceCommand::class;
 

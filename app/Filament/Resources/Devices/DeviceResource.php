@@ -2,11 +2,15 @@
 
 namespace App\Filament\Resources\Devices;
 
+use App\Filament\Resources\CompanyScopedResource;
 use App\Filament\Resources\Devices\Pages\ManageDevices;
+use App\Models\Company;
 use App\Models\Device;
 use App\Models\User;
 use App\Services\Adms\DeviceCommandService;
+use App\Services\CompanyAccess;
 use BackedEnum;
+use Closure;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -14,7 +18,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -24,7 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use UnitEnum;
 
-class DeviceResource extends Resource
+class DeviceResource extends CompanyScopedResource
 {
     protected static ?string $model = Device::class;
 
@@ -53,7 +56,7 @@ class DeviceResource extends Resource
     {
         return $schema
             ->components([
-                Select::make('company_id')->label(__('filament/resources/devices.fields.company'))->relationship('company', 'name')->required()->searchable()->preload(),
+                Select::make('company_id')->label(__('filament/resources/devices.fields.company'))->relationship('company', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))->rules([fn (): Closure => CompanyAccess::validationRule(Company::class)])->required()->searchable()->preload(),
                 TextInput::make('serial_number')->label(__('filament/resources/devices.fields.serial_number'))->required()->maxLength(100)->unique(ignoreRecord: true),
                 TextInput::make('name')->label(__('filament/resources/devices.fields.name'))->required()->maxLength(255),
                 TextInput::make('location')->label(__('filament/resources/devices.fields.location'))->nullable()->maxLength(255),
@@ -102,6 +105,7 @@ class DeviceResource extends Resource
             ->label(__($forceResend ? 'filament/resources/devices.actions.force_resend' : 'filament/resources/devices.actions.request_attendance'))
             ->icon(Heroicon::OutlinedArrowDownTray)
             ->color($forceResend ? 'warning' : 'primary')
+            ->visible(fn (): bool => auth()->user()?->isSuperAdmin() || (auth()->user()?->can('Update:Device') ?? false))
             ->requiresConfirmation()
             ->modalHeading(__($forceResend ? 'filament/resources/devices.actions.force_resend_heading' : 'filament/resources/devices.actions.request_attendance_heading'))
             ->modalDescription(__('filament/resources/devices.actions.bulk_attendance_description'))

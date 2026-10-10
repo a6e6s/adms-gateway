@@ -8,6 +8,7 @@ use App\Models\Device;
 use App\Models\DeviceCommand;
 use App\Models\DiscoveredDevice;
 use App\Models\User;
+use App\Services\CompanyAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -25,7 +26,7 @@ class DashboardQuery
         $user = auth()->user();
 
         return $user instanceof User && (
-            $user->hasRole(config('filament-shield.super_admin.name')) || $user->can('ViewAny:'.$subject)
+            $user->isSuperAdmin() || $user->can('ViewAny:'.$subject)
         );
     }
 
@@ -102,7 +103,7 @@ class DashboardQuery
     /** @return Builder<DeviceCommand> */
     public function commands(): Builder
     {
-        $query = DeviceCommand::query();
+        $query = CompanyAccess::scope(DeviceCommand::query());
         if (! self::canAccess('DeviceCommand')) {
             return $query->whereRaw('1 = 0');
         }
@@ -116,7 +117,7 @@ class DashboardQuery
     {
         $query = DiscoveredDevice::query()->whereNotIn('serial_number', Device::query()->select('serial_number'));
 
-        return self::canAccess('Device') ? $query : $query->whereRaw('1 = 0');
+        return auth()->user()?->isSuperAdmin() ? $query : $query->whereRaw('1 = 0');
     }
 
     /** @return Builder<Device> */
@@ -157,6 +158,8 @@ class DashboardQuery
         }
 
         $companyId = $this->companyId();
+
+        $query = CompanyAccess::scope($query);
 
         return $companyId === null ? $query : $query->where('company_id', $companyId);
     }

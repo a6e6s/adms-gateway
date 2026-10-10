@@ -139,15 +139,15 @@ it('hides discoveries that were already registered manually', function () {
     Livewire::test(ManageDiscoveredDevices::class)->assertCanNotSeeTableRecords([$discovery]);
 });
 
-it('uses device permissions to control discovery viewing and registration independently', function () {
+it('reserves unassigned discoveries for super admins despite device permissions', function () {
     $user = User::factory()->create();
     $discovery = DiscoveredDevice::factory()->create();
     $view = Permission::create(['name' => 'ViewAny:Device', 'guard_name' => 'web']);
     $create = Permission::create(['name' => 'Create:Device', 'guard_name' => 'web']);
     $user->givePermissionTo($view);
 
-    expect(Gate::forUser($user)->allows('viewAny', DiscoveredDevice::class))->toBeTrue();
+    expect(Gate::forUser($user)->allows('viewAny', DiscoveredDevice::class))->toBeFalse();
     expect(Gate::forUser($user)->allows('register', $discovery))->toBeFalse();
     $user->givePermissionTo($create);
-    expect(Gate::forUser($user)->allows('register', $discovery))->toBeTrue();
+    expect(Gate::forUser($user)->allows('register', $discovery))->toBeFalse();
 });

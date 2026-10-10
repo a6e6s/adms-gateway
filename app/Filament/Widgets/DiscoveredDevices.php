@@ -12,7 +12,7 @@ class DiscoveredDevices extends TableWidget
 {
     public static function canView(): bool
     {
-        return DashboardQuery::canAccess('Device');
+        return auth()->user()?->isSuperAdmin() ?? false;
     }
 
     public function table(Table $table): Table

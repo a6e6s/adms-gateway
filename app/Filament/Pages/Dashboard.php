@@ -11,6 +11,7 @@ use App\Filament\Widgets\RecentDeviceCommands;
 use App\Filament\Widgets\UploadsNeedingAttention;
 use App\Models\Company;
 use App\Services\Adms\DashboardQuery;
+use App\Services\CompanyAccess;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -33,7 +34,7 @@ class Dashboard extends BaseDashboard
                 ->schema([
                     Select::make('company_id')->label(__('filament/dashboard.company'))
                         ->placeholder(__('filament/dashboard.all_companies'))
-                        ->options(fn () => (OperationalSummary::canView() || DashboardQuery::canAccess('DeviceCommand')) ? Company::query()->pluck('name', 'id') : [])->searchable(),
+                        ->options(fn () => (OperationalSummary::canView() || DashboardQuery::canAccess('DeviceCommand')) ? CompanyAccess::scope(Company::query())->pluck('name', 'id') : [])->searchable(),
                     DatePicker::make('start_date')->label(__('filament/dashboard.start_date'))
                         ->default(fn () => CarbonImmutable::now(DashboardQuery::timezone())->format('Y-m-d'))->required(),
                     DatePicker::make('end_date')->label(__('filament/dashboard.end_date'))

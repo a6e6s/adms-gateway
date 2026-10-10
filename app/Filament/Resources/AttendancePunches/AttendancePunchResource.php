@@ -4,9 +4,10 @@ namespace App\Filament\Resources\AttendancePunches;
 
 use App\Enums\AttendanceStatus;
 use App\Filament\Resources\AttendancePunches\Pages\ManageAttendancePunches;
+use App\Filament\Resources\CompanyScopedResource;
 use App\Models\AttendancePunch;
+use App\Services\CompanyAccess;
 use BackedEnum;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -15,7 +16,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class AttendancePunchResource extends Resource
+class AttendancePunchResource extends CompanyScopedResource
 {
     protected static ?string $model = AttendancePunch::class;
 
@@ -62,7 +63,7 @@ class AttendancePunchResource extends Resource
                 TextColumn::make('received_at')->label(__('filament/resources/attendance-punches.columns.received_at'))->dateTime()->sortable(),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['device', 'employee']))
-            ->filters([SelectFilter::make('device_id')->label(__('filament/resources/attendance-punches.filters.device'))->relationship('device', 'serial_number')])
+            ->filters([SelectFilter::make('device_id')->label(__('filament/resources/attendance-punches.filters.device'))->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))])
             ->recordActions([])
             ->toolbarActions([]);
     }

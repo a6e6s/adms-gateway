@@ -95,7 +95,7 @@ it('creates a placeholder employee and device mapping for a new attendance PIN',
 
 it('records command polling and offers the pending attendance request', function () {
     $device = Device::factory()->create();
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $command = app(DeviceCommandService::class)->requestAttendance($device, $user, '2000-01-01 00:00:00', '2099-12-31 23:59:59');
 
     $response = $this->get('/iclock/getrequest?SN='.$device->serial_number);
@@ -107,7 +107,7 @@ it('records command polling and offers the pending attendance request', function
 
 it('accepts a replayed result for a known pending command', function () {
     $device = Device::factory()->create();
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $command = app(DeviceCommandService::class)->requestAttendance($device, $user, '2000-01-01 00:00:00', '2099-12-31 23:59:59');
 
     $response = $this->call(
@@ -127,7 +127,7 @@ it('accepts a replayed result for a known pending command', function () {
 
 it('expires an overdue attendance request when the device polls', function () {
     $device = Device::factory()->create();
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $command = app(DeviceCommandService::class)->requestAttendance($device, $user, '2000-01-01 00:00:00', '2099-12-31 23:59:59');
     $command->forceFill(['expires_at' => now()->subMinute()])->save();
 
@@ -139,7 +139,7 @@ it('expires an overdue attendance request when the device polls', function () {
 
 it('converts a requested range to the device timezone before creating the command', function () {
     $device = Device::factory()->create(['timezone' => 'Asia/Riyadh']);
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
 
     $command = app(DeviceCommandService::class)->requestAttendance(
         $device,
@@ -156,7 +156,7 @@ it('converts a requested range to the device timezone before creating the comman
 it('queues a date-ranged resend for the device to fetch on its next poll', function () {
     $this->travelTo('2026-10-06 12:00:00 UTC');
     $device = Device::factory()->create(['timezone' => 'Asia/Riyadh']);
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
 
     $command = app(DeviceCommandService::class)->forceResendAllAttendance(
         $device,
@@ -201,7 +201,7 @@ it('queues a date-ranged resend for the device to fetch on its next poll', funct
 
 it('accepts an earlier start time in the force history resend modal', function () {
     $this->travelTo('2026-10-06 09:36:04 Asia/Riyadh');
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $device = Device::factory()->create(['timezone' => 'Asia/Riyadh']);
     $this->actingAs($user);
 
@@ -224,7 +224,7 @@ it('accepts an earlier start time in the force history resend modal', function (
 });
 
 it('rejects a start time after the end time in the force history resend modal', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $device = Device::factory()->create(['timezone' => 'Asia/Riyadh']);
     $this->actingAs($user);
 
@@ -246,7 +246,7 @@ it('rejects a start time after the end time in the force history resend modal', 
 });
 
 it('queues an attendance command for every selected device', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $devices = Device::factory()->count(2)->create();
     $this->actingAs($user);
 
@@ -262,7 +262,7 @@ it('queues an attendance command for every selected device', function () {
 });
 
 it('updates boolean resource columns through table switches', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(User::factory()->superAdmin()->create());
     $company = Company::factory()->create(['is_active' => true]);
     $employee = Employee::factory()->create(['company_id' => $company->id, 'is_active' => true]);
     $device = Device::factory()->create(['company_id' => $company->id, 'is_enabled' => true]);
@@ -290,7 +290,7 @@ it('renders the Arabic panel in right-to-left mode when Arabic is selected', fun
 
 it('shows a visible language switcher in the authenticated admin top bar', function () {
     app()->setLocale('en');
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(User::factory()->superAdmin()->create());
 
     $html = view('filament.partials.language-switcher')->render();
 
@@ -302,7 +302,7 @@ it('shows a visible language switcher in the authenticated admin top bar', funct
 });
 
 it('stores the selected admin language in the session', function () {
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(User::factory()->superAdmin()->create())
         ->from('/admin')
         ->post('/admin/language', ['locale' => 'ar'])
         ->assertRedirect('/admin')
@@ -346,7 +346,7 @@ it('translates attendance status codes using the active panel language', functio
 
 it('records a successful device wake-up while keeping the command queued for polling', function () {
     $device = Device::factory()->create(['last_seen_ip' => '192.168.100.14']);
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $waker = Mockery::mock(DeviceCommandWaker::class);
     $waker->shouldReceive('wake')->once()->with($device);
     $this->app->instance(DeviceCommandWaker::class, $waker);
@@ -365,7 +365,7 @@ it('records a successful device wake-up while keeping the command queued for pol
 
 it('links matching historical attendance uploads to the offered query', function () {
     $device = Device::factory()->create();
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $command = app(DeviceCommandService::class)->requestAttendance(
         $device,
         $user,
@@ -396,7 +396,7 @@ it('links matching historical attendance uploads to the offered query', function
 
 it('does not link an attendance upload outside the requested time range', function () {
     $device = Device::factory()->create();
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $command = app(DeviceCommandService::class)->requestAttendance(
         $device,
         $user,

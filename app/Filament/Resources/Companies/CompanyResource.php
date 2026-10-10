@@ -3,12 +3,12 @@
 namespace App\Filament\Resources\Companies;
 
 use App\Filament\Resources\Companies\Pages\ManageCompanies;
+use App\Filament\Resources\CompanyScopedResource;
 use App\Models\Company;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -16,7 +16,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use UnitEnum;
 
-class CompanyResource extends Resource
+class CompanyResource extends CompanyScopedResource
 {
     protected static ?string $model = Company::class;
 

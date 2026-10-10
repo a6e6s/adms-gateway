@@ -3,21 +3,22 @@
 namespace App\Filament\Resources\AttendanceUploads;
 
 use App\Filament\Resources\AttendanceUploads\Pages\ManageAttendanceUploads;
+use App\Filament\Resources\CompanyScopedResource;
 use App\Jobs\ProcessAttendanceUpload;
 use App\Models\AttendanceUpload;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
-class AttendanceUploadResource extends Resource
+class AttendanceUploadResource extends CompanyScopedResource
 {
     protected static ?string $model = AttendanceUpload::class;
 
@@ -77,8 +78,9 @@ class AttendanceUploadResource extends Resource
                     ->label(__('filament/resources/attendance-uploads.actions.retry'))
                     ->icon(Heroicon::OutlinedArrowPath)
                     ->requiresConfirmation()
-                    ->visible(fn (AttendanceUpload $record): bool => in_array($record->status, ['failed', 'processed_with_errors'], true))
+                    ->visible(fn (AttendanceUpload $record): bool => static::canEdit($record) && in_array($record->status, ['failed', 'processed_with_errors'], true))
                     ->action(function (AttendanceUpload $record): void {
+                        Gate::authorize('update', $record);
                         $record->forceFill([
                             'status' => 'pending', 'processing_token' => null,
                             'processing_lease_expires_at' => null, 'last_dispatched_at' => null,
