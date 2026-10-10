@@ -11,6 +11,6 @@ return [
         'password' => 'Password',
         'password_confirmation' => 'Confirm password',
         'created' => 'API client created',
-        'instructions' => 'Send your username and password to POST /jwt-api-token-auth/ to obtain a token. Use Authorization: Token <token> when reading transactions. Save your credentials; the password cannot be retrieved later.',
+        'instructions' => 'Send your username and password to POST /jwt-api-token-auth/ to obtain a token. Use Authorization: jwt <token> or Authorization: Token <token> when reading transactions. Save your credentials; the password cannot be retrieved later.',
     ],
 ];

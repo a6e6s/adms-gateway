@@ -11,6 +11,6 @@ return [
         'password' => 'كلمة المرور',
         'password_confirmation' => 'تأكيد كلمة المرور',
         'created' => 'تم إنشاء عميل API',
-        'instructions' => 'أرسل اسم المستخدم وكلمة المرور إلى POST /jwt-api-token-auth/ للحصول على رمز. استخدم Authorization: Token <token> لقراءة الحركات. احفظ بيانات الدخول؛ لا يمكن استرجاع كلمة المرور لاحقاً.',
+        'instructions' => 'أرسل اسم المستخدم وكلمة المرور إلى POST /jwt-api-token-auth/ للحصول على رمز. استخدم Authorization: jwt <token> أو Authorization: Token <token> لقراءة الحركات. احفظ بيانات الدخول؛ لا يمكن استرجاع كلمة المرور لاحقاً.',
     ],
 ];

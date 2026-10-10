@@ -55,7 +55,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'BioTime-compatible attendance API. Obtain a general token with POST /jwt-api-token-auth/ and send Authorization: Token <token> when reading transactions. Exact BioTime 8.5/9.0 compatibility is still being validated.',
+        'description' => 'BioTime-compatible attendance API. Obtain a general token with POST /jwt-api-token-auth/ and send Authorization: jwt <token> or Authorization: Token <token> when reading transactions. Exact BioTime 8.5/9.0 compatibility is still being validated.',
     ],
 
     'ui' => [
@@ -189,7 +189,7 @@ return [
             'middleware' => [AuthenticateBioTimeClient::class],
             'scheme' => SecurityScheme::apiKey('header', 'Authorization')
                 ->as('BioTimeToken')
-                ->setDescription('Enter Token followed by a space and the token returned by POST /jwt-api-token-auth/. Example: Token <your-token>.'),
+                ->setDescription('Enter jwt or Token followed by a space and the token returned by POST /jwt-api-token-auth/. Example: jwt <your-token>.'),
         ],
     ],
 ];

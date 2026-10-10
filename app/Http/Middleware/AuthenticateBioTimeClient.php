@@ -23,7 +23,7 @@ class AuthenticateBioTimeClient
                 ->header('WWW-Authenticate', 'Token');
         }
 
-        if (! preg_match('/^Token ([a-f0-9]{40})$/iD', $authorization, $matches)) {
+        if (! preg_match('/^(?:Token|jwt) ([a-f0-9]{40})$/iD', $authorization, $matches)) {
             return response()->json(['detail' => 'Invalid token.'], 401)->header('WWW-Authenticate', 'Token');
         }
 

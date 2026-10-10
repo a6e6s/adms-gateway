@@ -48,11 +48,14 @@ it('returns 401 for invalid authorization', function (string $authorization) {
         ->assertUnauthorized()->assertExactJson(['detail' => 'Invalid token.']);
 })->with([
     'unknown token' => ['Token '.str_repeat('a', 40)],
+    'unknown jwt token' => ['jwt '.str_repeat('a', 40)],
+    'malformed jwt token' => ['jwt short'],
+    'missing scheme' => [str_repeat('a', 40)],
     'wrong scheme' => ['Bearer '.str_repeat('a', 40)],
     'malformed token' => ['Token short'],
 ]);
 
-it('revokes token access and login when the client or company is inactive', function (bool $inactiveCompany) {
+it('revokes token access and login when the client or company is inactive', function (bool $inactiveCompany, string $scheme) {
     $client = BioTimeClient::factory()->create();
     if ($inactiveCompany) {
         $client->company->update(['is_active' => false]);
@@ -60,11 +63,11 @@ it('revokes token access and login when the client or company is inactive', func
         $client->update(['is_active' => false]);
     }
 
-    $this->withHeader('Authorization', 'Token '.$client->token)->get('/iclock/api/transactions/')
+    $this->withHeader('Authorization', $scheme.' '.$client->token)->get('/iclock/api/transactions/')
         ->assertUnauthorized();
     $this->postJson('/jwt-api-token-auth/', ['username' => $client->username, 'password' => 'connector-password'])
         ->assertBadRequest();
-})->with(['inactive client' => [false], 'inactive company' => [true]]);
+})->with(['inactive client' => [false], 'inactive company' => [true]])->with(['Token', 'jwt']);
 
 it('returns the captured BioTime transaction wire shape with local time and string PINs', function () {
     $punch = AttendancePunch::factory()->create([
@@ -346,3 +349,17 @@ it('documents token authorization for transactions while leaving login public', 
             ->toBe([['BioTimeToken' => []]]);
     }
 });
+
+it('accepts both authorization schemes and preserves company isolation', function (string $scheme) {
+    $punch = AttendancePunch::factory()->create();
+    $foreignPunch = AttendancePunch::factory()->create();
+    $client = BioTimeClient::factory()->for($punch->company)->create();
+
+    $this->withHeader('Authorization', $scheme.' '.$client->token)
+        ->get('/iclock/api/transactions/')
+        ->assertOk()->assertJsonPath('count', 1)->assertJsonPath('data.0.id', $punch->id);
+    $this->get('/iclock/api/transactions/'.$punch->id.'/')
+        ->assertOk()->assertJsonPath('id', $punch->id);
+    $this->get('/iclock/api/transactions/'.$foreignPunch->id.'/')
+        ->assertNotFound()->assertExactJson(['detail' => 'Not found.']);
+})->with(['Token', 'jwt', 'JWT']);
