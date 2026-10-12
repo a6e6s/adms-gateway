@@ -156,6 +156,8 @@ return [
         RestrictedDocsAccess::class,
     ],
 
+    'docs_enabled' => env('SCRAMBLE_DOCS_ENABLED', true),
+
     'extensions' => [],
 
     /*
