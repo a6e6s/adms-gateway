@@ -58,6 +58,9 @@ class CompanyResource extends CompanyScopedResource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('name')->label(__('filament/resources/companies.columns.name'))->searchable()->sortable(),
                 TextColumn::make('code')->label(__('filament/resources/companies.columns.code'))->searchable(),

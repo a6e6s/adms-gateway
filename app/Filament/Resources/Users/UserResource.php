@@ -67,7 +67,10 @@ class UserResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['companies', 'roles']))
+        return $table->defaultSort('created_at', 'desc')
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25)
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['companies', 'roles']))
             ->columns([
                 TextColumn::make('name')->label(__('filament/resources/users.fields.name'))->searchable()->sortable(),
                 TextColumn::make('email')->label(__('filament/resources/users.fields.email'))->searchable()->sortable(),

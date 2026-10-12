@@ -57,6 +57,9 @@ class DeviceEmployeeResource extends CompanyScopedResource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('pin')->label(__('filament/resources/device-employees.columns.pin'))->searchable()->sortable(),
                 TextColumn::make('device.serial_number')->label(__('filament/resources/device-employees.columns.device'))->searchable(),

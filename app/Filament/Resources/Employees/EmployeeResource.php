@@ -60,6 +60,9 @@ class EmployeeResource extends CompanyScopedResource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('employee_number')->label(__('filament/resources/employees.columns.employee_number'))->searchable()->sortable(),
                 TextColumn::make('name')->label(__('filament/resources/employees.columns.name'))->searchable()->sortable(),

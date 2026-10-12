@@ -48,6 +48,8 @@ class DiscoveredDeviceResource extends Resource
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereNotIn('serial_number', Device::query()->select('serial_number')))
             ->defaultSort('last_seen_at', 'desc')
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25)
             ->poll('30s')
             ->emptyStateHeading(__('filament/resources/discovered-devices.empty'))
             ->emptyStateDescription(__('filament/resources/discovered-devices.empty_description'))

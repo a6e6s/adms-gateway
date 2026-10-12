@@ -49,6 +49,9 @@ class DeviceCommandResource extends CompanyScopedResource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('requested_at', 'desc')
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('device.serial_number')->label(__('filament/resources/device-commands.columns.device'))->searchable(),
                 TextColumn::make('type')->label(__('filament/resources/device-commands.columns.type'))

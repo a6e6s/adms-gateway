@@ -52,6 +52,9 @@ class AttendancePunchResource extends CompanyScopedResource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('received_at', 'desc')
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('occurred_at_local')->label(__('filament/resources/attendance-punches.columns.device_time'))->sortable()->searchable(),
                 TextColumn::make('pin')->label(__('filament/resources/attendance-punches.columns.pin'))->searchable()->sortable(),

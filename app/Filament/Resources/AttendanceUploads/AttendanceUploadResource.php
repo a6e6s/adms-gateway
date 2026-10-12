@@ -54,6 +54,9 @@ class AttendanceUploadResource extends CompanyScopedResource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('received_at', 'desc')
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('id')->label(__('filament/resources/attendance-uploads.columns.id'))->sortable(),
                 TextColumn::make('device.serial_number')->label(__('filament/resources/attendance-uploads.columns.device'))->searchable(),

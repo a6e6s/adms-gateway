@@ -70,6 +70,9 @@ class DeviceResource extends CompanyScopedResource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25)
             ->columns([
                 TextColumn::make('serial_number')->label(__('filament/resources/devices.columns.serial_number'))->searchable()->sortable(),
                 TextColumn::make('name')->label(__('filament/resources/devices.columns.name'))->searchable(),
