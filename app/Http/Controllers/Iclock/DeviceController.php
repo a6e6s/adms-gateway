@@ -7,6 +7,7 @@ use App\Models\Device;
 use App\Models\DiscoveredDevice;
 use App\Services\Adms\AcceptAttendanceUpload;
 use App\Services\Adms\DeviceCommandService;
+use DateTimeZone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -23,6 +24,11 @@ class DeviceController extends Controller
         }
 
         $this->touch($device, $request);
+        $timeZoneOffset = (new DateTimeZone($device->timezone))->getOffset(now());
+        $timeZoneOffsetMinutes = intdiv($timeZoneOffset, 60);
+        $timeZone = $timeZoneOffsetMinutes % 60 === 0 && abs($timeZoneOffsetMinutes) < 720
+            ? intdiv($timeZoneOffsetMinutes, 60)
+            : $timeZoneOffsetMinutes;
         $pushVersion = $request->query('pushver');
         $deviceType = $request->query('DeviceType');
         $device->forceFill([
@@ -33,6 +39,7 @@ class DeviceController extends Controller
         return response(implode("\n", [
             "GET OPTION FROM: {$device->serial_number}",
             'ATTLOGStamp='.($device->attlog_stamp ?? 'None'),
+            "TimeZone={$timeZone}",
             'ErrorDelay=60',
             'Delay=10',
             'TransTimes=00:00;14:05',
