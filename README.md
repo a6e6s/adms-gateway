@@ -16,6 +16,7 @@ The application separates device communication from HR business rules. It collec
 - [Registering a device](#registering-a-device)
 - [Device protocol endpoints](#device-protocol-endpoints)
 - [Historical attendance requests](#historical-attendance-requests)
+- [Device commands](#device-commands)
 - [BioTime attendance API](#biotime-attendance-api)
 - [API documentation](#api-documentation)
 - [Operations and recovery](#operations-and-recovery)
@@ -49,9 +50,13 @@ The Filament panel includes these resources:
 | Device Employees | Associate a device PIN with an employee in the same company |
 | Attendance Punches | Browse captured punches, employee/device associations, timestamps, and raw codes |
 | Attendance Uploads | Inspect receipt status and processing counts; retry failed or partially rejected uploads |
-| Device Commands | Inspect attendance-query requests, delivery/result state, and wake-up results |
+| Device Commands | Inspect device operations, delivery/result state, response data, and wake-up results |
 
 The panel supports English and Arabic through its language switcher. Filament Shield is installed for role administration. Review domain permissions and custom action authorization before treating the panel as a production tenancy boundary.
+
+Resource tables use a default page size of 25 and show the newest records first where a creation or request timestamp applies. Filters appear above the table and include the relevant company, device, status, role, employee, type, and date-range fields. The Device Commands table also supports searching and filtering by device, command type, status, and request date; pending commands can be cancelled.
+
+The public home page, bilingual sign-in page, admin theme, and standalone Laravel error pages (including common 401, 403, 404, 419, 429, 500, and 503 responses) use the same navy and cyan visual theme.
 
 ### Attendance and integration
 
@@ -152,7 +157,7 @@ APP_FALLBACK_LOCALE=en
 ADMS_DEVICE_ONLINE_WINDOW_MINUTES=5
 ```
 
-The application timezone is currently configured as UTC in `config/app.php`. Company and device timezones are configured independently in the panel. Device-local attendance interpretation uses the timezone saved with the upload.
+The application timezone is read from `APP_TIMEZONE` and defaults to `Asia/Riyadh` in `config/app.php`. Company and device timezones are configured independently in the panel. Device-local attendance interpretation uses the timezone saved with the upload.
 
 The optional `ADMS_DEVICE_ONLINE_WINDOW_MINUTES` setting controls the device's online indicator. It is a recent-contact threshold, not proof that a terminal can currently receive a command.
 
@@ -233,6 +238,7 @@ These endpoints serve terminal traffic and return protocol-oriented plain text.
 | --- | --- | --- |
 | GET | `/iclock/cdata` | Device initialization and gateway options |
 | POST | `/iclock/cdata` | Attendance upload with `table=ATTLOG`; bounded `OPTIONS` uploads are acknowledged |
+| POST | `/iclock/querydata` | Device query data uploads, including supported user and options responses |
 | GET | `/iclock/getrequest` | Device command polling |
 | POST | `/iclock/devicecmd` | Attendance-query command results |
 | GET | `/iclock/ping` | Device liveness |
@@ -260,6 +266,25 @@ The displayed `\t` represents a tab on the wire. The force-resend action records
 The gateway attempts an `R-CMD` UDP wake-up datagram to the terminal's last-seen address on port 4374. A failed wake-up is recorded without discarding the queued attendance query. Delivery still depends on terminal polling and network reachability.
 
 Only enabled devices in active companies can receive these requests. A device with an unexpired active attendance request cannot receive another one. Command acknowledgements, received upload batches, and proof that the terminal returned its entire history are separate facts.
+
+## Device commands
+
+The Devices resource groups device operations in a single command selector. It shows an operation description and its effects before confirmation. Commands are queued for delivery on the next device poll; the queue worker is needed to process attendance uploads, but not for the device's direct command polling. A terminal must be enabled and belong to an active company. Firmware and model support varies, so command availability in the panel does not guarantee support on every terminal.
+
+| Category | Available operations | Notes |
+| --- | --- | --- |
+| Read device state | Get Device Info, Get Device Options; Read Device Clock is a separate device action | `INFO` and `GET OPTIONS` return different response types. Reading the live clock uses a direct SDK connection to the terminal on TCP port 4370; the Laravel host must be able to reach that port. |
+| Clock and time sync | Sync Clock to Server, Set Device Time, Disable Time Sync | Device time and timezone are handled using the device's configured timezone. Disabling automatic sync changes the terminal's sync settings. |
+| Device controls | Reboot, Door Unlock, Cancel Alarm, Refresh Options | Reboot and unlock are single-device operations and require an explicit confirmation phrase. Unlock may depend on the terminal's relay configuration. |
+| Server and network | Change Server Address and Port, Set Network | These can interrupt connectivity. Set Network configures static network values; ensure the new address remains reachable. |
+| Users and cards | Create/Update User, Delete User, Query Users, Update Card, Register Card | User queries are PIN-scoped. Create/update and registration operations require the fields requested by the selected operation. |
+| Biometrics | Upload Fingerprint, Upload Face, Delete Fingerprint, Delete Face, Register Fingerprint, Register Face | Template transfer and enrollment depend on terminal model, firmware, and supported template format. |
+
+Clear Log, Clear Data, and Clear Photo are intentionally hidden from the command selector. Historical attendance requests remain separate bulk actions: **Request Attendance** and **Force Full History Resend** request a bounded attendance range.
+
+Command records show request and delivery timestamps, device response/result data, and the wake-up attempt where applicable. GET OPTIONS responses are displayed as readable key/value fields, with the communication password masked. Query start/end times apply to date-range attendance commands and remain empty for operations that do not request a time range. Sensitive user and biometric command payloads are stored using the application's encrypted model fields.
+
+Only pending commands can be cancelled. Once a command has been offered to the terminal, the application cannot retract it from the device. Device responses are asynchronous: a queued command is not proof that the terminal received or completed it.
 
 ## BioTime attendance API
 
@@ -559,38 +584,6 @@ These documents include design targets and future work. Consult the implementati
 - Validate wider terminal/firmware compatibility with real device captures.
 - Complete production authorization, deployment, load, and recovery validation.
 
-The application does not currently provide BioTime's payroll engine, shift calculations, employee self-service, biometric template management, arbitrary terminal commands, or a complete replica of its REST API.
-
-
-
-
-# device command
-- Query Users
-- Door Unlock
-- Set Device Time
-- Sync Clock
-- Get Device Info
-- Force full Attendance history resend (Attendance resend)
-- Attendance range query (Attendance requests)
-- Query Users
-- Update/create  User
-- Delete User
-- Register Fingerprint (need confirmation)
-- Reboot 
-- Set Web Server
-- Set Network
-
-
-
-
-
-
-
-
-
-
-
-
-
+The application does not currently provide BioTime's payroll engine, shift calculations, employee self-service, arbitrary terminal commands, or a complete replica of its REST API. It supports the explicit user and biometric template operations listed above; this is not a general-purpose biometric management interface.
 
 

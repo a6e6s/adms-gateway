@@ -15,6 +15,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -67,7 +69,16 @@ class DeviceEmployeeResource extends CompanyScopedResource
                 TextColumn::make('employee.company.name')->label(__('filament/resources/device-employees.columns.company')),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['device', 'employee.company']))
-            ->filters([])
+            ->filters([
+                SelectFilter::make('device_id')
+                    ->label(__('filament/resources/device-employees.fields.device'))
+                    ->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
+                    ->searchable(),
+                SelectFilter::make('employee_id')
+                    ->label(__('filament/resources/device-employees.fields.employee'))
+                    ->relationship('employee', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
+                    ->searchable(),
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([])
             ->toolbarActions([]);
     }

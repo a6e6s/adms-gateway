@@ -10,6 +10,7 @@ return [
         'pending' => 'Pending', 'processing' => 'Processing', 'processed' => 'Processed',
         'processed_with_errors' => 'Processed with errors', 'failed' => 'Failed',
     ],
+    'filters' => ['device' => 'Device', 'received_at' => 'Received date', 'from' => 'From', 'until' => 'Until'],
     'actions' => ['retry' => 'Retry processing'],
     'notifications' => ['retry_queued' => 'Upload queued for processing'],
 ];

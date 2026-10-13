@@ -15,6 +15,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Gate;
 use UnitEnum;
@@ -71,8 +73,13 @@ class CompanyResource extends CompanyScopedResource
                 TextColumn::make('devices_count')->counts('devices')->label(__('filament/resources/companies.columns.devices_count')),
             ])
             ->filters([
-                //
-            ])
+                SelectFilter::make('is_active')
+                    ->label(__('filament/resources/companies.fields.is_active'))
+                    ->options([
+                        '1' => __('filament/resources/companies.statuses.active'),
+                        '0' => __('filament/resources/companies.statuses.inactive'),
+                    ]),
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([
                 EditAction::make(),
                 Action::make('createApiClient')

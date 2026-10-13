@@ -6,8 +6,8 @@ use App\Filament\Resources\CompanyScopedResource;
 use App\Filament\Resources\DeviceCommands\Pages\ManageDeviceCommands;
 use App\Models\DeviceCommand;
 use App\Models\User;
-use App\Services\CompanyAccess;
 use App\Services\Adms\DeviceCommandService;
+use App\Services\CompanyAccess;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -135,19 +136,37 @@ class DeviceCommandResource extends CompanyScopedResource
                         'expired' => __('filament/resources/device-commands.statuses.expired'),
                         'cancelled' => __('filament/resources/device-commands.statuses.cancelled'),
                         'failed' => __('filament/resources/device-commands.statuses.failed'),
-                    ]),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $status = $data['value'] ?? null;
+                        if (! is_string($status) || $status === '') {
+                            return $query;
+                        }
+
+                        if ($status === 'expired') {
+                            return $query->where(fn (Builder $query): Builder => $query
+                                ->where('status', 'expired')
+                                ->orWhere(fn (Builder $query): Builder => $query
+                                    ->where('status', 'pending')
+                                    ->where('expires_at', '<=', now())));
+                        }
+
+                        return $query->where('status', $status)
+                            ->when($status === 'pending', fn (Builder $query): Builder => $query->where('expires_at', '>', now()));
+                    }),
                 Filter::make('requested_at')
                     ->label(__('filament/resources/device-commands.filters.requested_at'))
                     ->schema([
                         DatePicker::make('from')->label(__('filament/resources/device-commands.filters.from')),
                         DatePicker::make('until')->label(__('filament/resources/device-commands.filters.until')),
                     ])
+                    ->columns(2)->columnSpan(2)
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when($data['from'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('requested_at', '>=', $date))
                             ->when($data['until'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('requested_at', '<=', $date));
                     }),
-            ])
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([
                 Action::make('cancelPending')
                     ->label(__('filament/resources/device-commands.actions.cancel_pending'))
@@ -236,8 +255,18 @@ class DeviceCommandResource extends CompanyScopedResource
 
         $rows = '';
         foreach ($options as $key => $value) {
-            $label = str(ltrim($key, '~'))->headline()->toString();
-            $displayValue = $key === 'ComPwd'
+            $normalizedKey = ltrim($key, '~');
+            $label = match ($normalizedKey) {
+                'SerialNumber' => __('filament/resources/device-commands.option_fields.serial_number'),
+                'FirmVer' => __('filament/resources/device-commands.option_fields.firmware_version'),
+                'DeviceName' => __('filament/resources/device-commands.option_fields.device_name'),
+                'IPAddress' => __('filament/resources/device-commands.option_fields.ip_address'),
+                'NetMask' => __('filament/resources/device-commands.option_fields.network_mask'),
+                'GATEIPAddress' => __('filament/resources/device-commands.option_fields.gateway_ip_address'),
+                'ComPwd' => __('filament/resources/device-commands.option_fields.communication_password'),
+                default => str($normalizedKey)->headline()->toString(),
+            };
+            $displayValue = $normalizedKey === 'ComPwd'
                 ? __('filament/resources/device-commands.sensitive_value_hidden')
                 : $value;
 

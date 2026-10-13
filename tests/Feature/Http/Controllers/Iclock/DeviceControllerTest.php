@@ -2,6 +2,7 @@
 
 use App\Enums\AttendanceStatus;
 use App\Filament\Resources\Companies\Pages\ManageCompanies;
+use App\Filament\Resources\DeviceCommands\DeviceCommandResource;
 use App\Filament\Resources\DeviceCommands\Pages\ManageDeviceCommands;
 use App\Filament\Resources\Devices\DeviceResource;
 use App\Filament\Resources\Devices\Pages\ManageDevices;
@@ -626,28 +627,36 @@ it('shows device options as readable values while hiding the communication passw
         'type' => 'get_device_options',
         'status' => 'acknowledged',
         'wire_command_id' => 8,
-        'raw_result' => 'ID=8&Return=0&CMD=GET OPTIONS' . "\nDevice options response stored encrypted.",
-        'encrypted_payload' => "ID=8&Return=0&CMD=GET OPTIONS\n~SerialNumber=A39N203960051,FirmVer=Ver 8.0.4.5-20200729,~DeviceName=P160/ID,NetMask=255.255.255.0,GATEIPAddress=192.168.100.1,ComPwd=secret",
+        'raw_result' => 'ID=8&Return=0&CMD=GET OPTIONS'."\nDevice options response stored encrypted.",
+        'encrypted_payload' => "ID=8&Return=0&CMD=GET OPTIONS\n~SerialNumber=A39N203960051,FirmVer=Ver 8.0.4.5-20200729,~DeviceName=P160/ID,NetMask=255.255.255.0,GATEIPAddress=192.168.100.1,MachineType=<script>alert(1)</script>,ComPwd=secret",
         'result_received_at' => now(),
     ]);
     $this->actingAs($user);
     app()->setLocale('en');
 
-    Livewire::test(ManageDeviceCommands::class)
-        ->mountTableAction('viewResult', (string) $command->getKey())
-        ->assertActionMounted(TestAction::make('viewResult')->table($command))
-        ->assertSee('Serial Number')
-        ->assertSee('P160/ID')
-        ->assertSee('255.255.255.0')
-        ->assertSee('192.168.100.1')
-        ->assertSee('Hidden')
-        ->assertDontSee('ComPwd=secret');
+    $result = DeviceCommandResource::formatResultContent($command)->toHtml();
+
+    expect($result)
+        ->toContain('Serial Number')
+        ->toContain('P160/ID')
+        ->toContain('255.255.255.0')
+        ->toContain('192.168.100.1')
+        ->toContain('Hidden')
+        ->toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+        ->not->toContain('<script>alert(1)</script>')
+        ->not->toContain('ComPwd=secret');
+
+    Livewire::test(ManageDeviceCommands::class)->assertSee('View result');
 });
 
 it('filters device commands by status', function () {
     $user = User::factory()->superAdmin()->create();
     $matchingCommand = DeviceCommand::factory()->create(['status' => 'acknowledged']);
     $otherCommand = DeviceCommand::factory()->create(['status' => 'failed']);
+    $expiredCommand = DeviceCommand::factory()->create([
+        'status' => 'pending',
+        'expires_at' => now()->subMinute(),
+    ]);
     $this->actingAs($user);
 
     Livewire::test(ManageDeviceCommands::class)
@@ -658,6 +667,11 @@ it('filters device commands by status', function () {
         ->filterTable('status', 'acknowledged')
         ->assertCanSeeTableRecords([$matchingCommand])
         ->assertCanNotSeeTableRecords([$otherCommand]);
+
+    Livewire::test(ManageDeviceCommands::class)
+        ->filterTable('status', 'expired')
+        ->assertCanSeeTableRecords([$expiredCommand])
+        ->assertCanNotSeeTableRecords([$matchingCommand]);
 });
 
 it('cancels a pending command from the device commands table', function () {

@@ -23,7 +23,8 @@ return [
         'connection_status' => 'حالة الاتصال', 'last_seen_at' => 'آخر اتصال', 'last_getrequest_at' => 'آخر طلب أوامر',
         'device_time_at' => 'ساعة الجهاز (منطقته الزمنية)', 'attlog_stamp' => 'مؤشر الحضور',
     ],
-    'statuses' => ['online' => 'متصل', 'offline' => 'غير متصل'],
+    'filters' => ['connection_status' => 'حالة الاتصال'],
+    'statuses' => ['online' => 'متصل', 'offline' => 'غير متصل', 'enabled' => 'مفعّل', 'disabled' => 'غير مفعّل'],
     'privileges' => [0 => 'مستخدم عادي (0)', 2 => 'مسؤول تسجيل (2)', 6 => 'مسؤول (6)', 10 => 'مخصص (10)', 14 => 'مسؤول النظام الأعلى (14)'],
     'placeholders' => ['not_received' => 'لم يُستقبل'],
     'actions' => [

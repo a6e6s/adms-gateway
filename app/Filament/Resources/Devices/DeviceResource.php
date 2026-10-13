@@ -26,6 +26,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -104,7 +106,36 @@ class DeviceResource extends CompanyScopedResource
                     ->disabled(fn (Device $record): bool => ! static::canEdit($record)),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('company'))
-            ->filters([])
+            ->filters([
+                SelectFilter::make('company_id')
+                    ->label(__('filament/resources/devices.fields.company'))
+                    ->relationship('company', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
+                    ->searchable(),
+                SelectFilter::make('is_enabled')
+                    ->label(__('filament/resources/devices.fields.is_enabled'))
+                    ->options([
+                        '1' => __('filament/resources/devices.statuses.enabled'),
+                        '0' => __('filament/resources/devices.statuses.disabled'),
+                    ]),
+                SelectFilter::make('connection_status')
+                    ->label(__('filament/resources/devices.filters.connection_status'))
+                    ->options([
+                        'online' => __('filament/resources/devices.statuses.online'),
+                        'offline' => __('filament/resources/devices.statuses.offline'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $status = $data['value'] ?? null;
+                        if (! in_array($status, ['online', 'offline'], true)) {
+                            return $query;
+                        }
+
+                        $onlineCutoff = now()->subMinutes(max(1, (int) config('services.adms.device_online_window_minutes', 5)));
+
+                        return $status === 'online'
+                            ? $query->where('last_seen_at', '>=', $onlineCutoff)
+                            : $query->where(fn (Builder $query): Builder => $query->whereNull('last_seen_at')->orWhere('last_seen_at', '<', $onlineCutoff));
+                    }),
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([EditAction::make()])
             ->toolbarActions([
                 self::deviceCommandsBulkAction(),

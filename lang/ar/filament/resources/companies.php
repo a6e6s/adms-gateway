@@ -4,6 +4,7 @@ return [
     'model_label' => 'شركة', 'plural_model_label' => 'الشركات',
     'fields' => ['name' => 'الاسم', 'code' => 'الرمز', 'timezone' => 'المنطقة الزمنية', 'is_active' => 'نشطة'],
     'columns' => ['name' => 'الاسم', 'code' => 'الرمز', 'timezone' => 'المنطقة الزمنية', 'devices_count' => 'الأجهزة'],
+    'statuses' => ['active' => 'نشطة', 'inactive' => 'غير نشطة'],
     'api_client' => [
         'create' => 'إنشاء عميل API',
         'heading' => 'إنشاء عميل API لشركة :company',

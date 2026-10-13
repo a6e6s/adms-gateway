@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
 Route::post('/admin/language', SetAdminLanguageController::class)
-    ->middleware('auth')
     ->name('admin.language');
 
 Route::prefix('iclock')->name('iclock.')->group(function (): void {

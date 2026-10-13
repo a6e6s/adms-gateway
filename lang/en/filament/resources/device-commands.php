@@ -12,6 +12,11 @@ return [
         'device' => 'Device', 'type' => 'Command', 'status' => 'Status', 'requested_at' => 'Requested date',
         'from' => 'From', 'until' => 'Until',
     ],
+    'option_fields' => [
+        'serial_number' => 'Serial Number', 'firmware_version' => 'Firmware Version', 'device_name' => 'Device Name',
+        'ip_address' => 'IP Address', 'network_mask' => 'Network Mask', 'gateway_ip_address' => 'Gateway IP Address',
+        'communication_password' => 'Communication Password',
+    ],
     'not_applicable' => 'Not applicable',
     'sensitive_value_hidden' => 'Hidden',
     'actions' => [

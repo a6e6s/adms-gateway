@@ -6,12 +6,16 @@ use App\Filament\Resources\AttendanceUploads\Pages\ManageAttendanceUploads;
 use App\Filament\Resources\CompanyScopedResource;
 use App\Jobs\ProcessAttendanceUpload;
 use App\Models\AttendanceUpload;
+use App\Services\CompanyAccess;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -69,13 +73,29 @@ class AttendanceUploadResource extends CompanyScopedResource
                 TextColumn::make('rejected_rows')->label(__('filament/resources/attendance-uploads.columns.rejected_rows'))->numeric(),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('device'))
-            ->filters([SelectFilter::make('status')->label(__('filament/resources/attendance-uploads.columns.status'))->options([
-                'pending' => __('filament/resources/attendance-uploads.statuses.pending'),
-                'processing' => __('filament/resources/attendance-uploads.statuses.processing'),
-                'processed' => __('filament/resources/attendance-uploads.statuses.processed'),
-                'processed_with_errors' => __('filament/resources/attendance-uploads.statuses.processed_with_errors'),
-                'failed' => __('filament/resources/attendance-uploads.statuses.failed'),
-            ])])
+            ->filters([
+                SelectFilter::make('device_id')
+                    ->label(__('filament/resources/attendance-uploads.filters.device'))
+                    ->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
+                    ->searchable(),
+                SelectFilter::make('status')->label(__('filament/resources/attendance-uploads.columns.status'))->options([
+                    'pending' => __('filament/resources/attendance-uploads.statuses.pending'),
+                    'processing' => __('filament/resources/attendance-uploads.statuses.processing'),
+                    'processed' => __('filament/resources/attendance-uploads.statuses.processed'),
+                    'processed_with_errors' => __('filament/resources/attendance-uploads.statuses.processed_with_errors'),
+                    'failed' => __('filament/resources/attendance-uploads.statuses.failed'),
+                ]),
+                Filter::make('received_at')
+                    ->label(__('filament/resources/attendance-uploads.filters.received_at'))
+                    ->schema([
+                        DatePicker::make('from')->label(__('filament/resources/attendance-uploads.filters.from')),
+                        DatePicker::make('until')->label(__('filament/resources/attendance-uploads.filters.until')),
+                    ])
+                    ->columns(2)->columnSpan(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['from'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('received_at', '>=', $date))
+                        ->when($data['until'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('received_at', '<=', $date))),
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([
                 Action::make('retry')
                     ->label(__('filament/resources/attendance-uploads.actions.retry'))

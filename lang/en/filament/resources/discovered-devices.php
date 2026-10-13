@@ -7,6 +7,7 @@ return [
     'first_seen' => 'First attempt',
     'attempts' => 'Connection attempts',
     'device_type' => 'Reported device type',
+    'filters' => ['device_type' => 'Device type', 'push_version' => 'Push version'],
     'register' => 'Register device',
     'description' => 'Select a company and name. The serial number is filled automatically. The device will remain disabled until you enable it in Devices.',
     'registered' => 'Device registered as disabled. Enable it in Devices when ready.',

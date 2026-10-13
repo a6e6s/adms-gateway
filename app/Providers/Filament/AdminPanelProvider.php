@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\Login;
 use App\Filament\Pages\Dashboard;
 use App\Http\Middleware\SetFilamentLocale;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -30,7 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(Login::class)
             ->brandName(fn (): string => __('filament.brand'))
             ->colors([
                 'primary' => Color::Cyan,

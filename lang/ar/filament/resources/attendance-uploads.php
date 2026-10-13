@@ -10,6 +10,7 @@ return [
         'pending' => 'قيد الانتظار', 'processing' => 'قيد المعالجة', 'processed' => 'تمت المعالجة',
         'processed_with_errors' => 'تمت المعالجة مع أخطاء', 'failed' => 'فشلت المعالجة',
     ],
+    'filters' => ['device' => 'الجهاز', 'received_at' => 'تاريخ الاستلام', 'from' => 'من', 'until' => 'إلى'],
     'actions' => ['retry' => 'إعادة المعالجة'],
     'notifications' => ['retry_queued' => 'تمت إضافة الرفع إلى قائمة المعالجة'],
 ];

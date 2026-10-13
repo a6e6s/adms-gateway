@@ -12,6 +12,11 @@ return [
         'device' => 'الجهاز', 'type' => 'الأمر', 'status' => 'الحالة', 'requested_at' => 'تاريخ الطلب',
         'from' => 'من', 'until' => 'إلى',
     ],
+    'option_fields' => [
+        'serial_number' => 'الرقم التسلسلي', 'firmware_version' => 'إصدار البرنامج الثابت', 'device_name' => 'اسم الجهاز',
+        'ip_address' => 'عنوان IP', 'network_mask' => 'قناع الشبكة', 'gateway_ip_address' => 'عنوان البوابة',
+        'communication_password' => 'كلمة مرور الاتصال',
+    ],
     'not_applicable' => 'غير متاح',
     'sensitive_value_hidden' => 'مخفي',
     'actions' => [

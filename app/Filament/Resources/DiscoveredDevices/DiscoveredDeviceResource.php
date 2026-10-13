@@ -14,6 +14,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +64,26 @@ class DiscoveredDeviceResource extends Resource
                 TextColumn::make('push_version')->label(__('filament/resources/devices.columns.push_version')),
                 TextColumn::make('device_type')->label(__('filament/resources/discovered-devices.device_type')),
             ])
+            ->filters([
+                SelectFilter::make('device_type')
+                    ->label(__('filament/resources/discovered-devices.filters.device_type'))
+                    ->options(fn (): array => DiscoveredDevice::query()
+                        ->whereNotIn('serial_number', Device::query()->select('serial_number'))
+                        ->whereNotNull('device_type')
+                        ->distinct()
+                        ->orderBy('device_type')
+                        ->pluck('device_type', 'device_type')
+                        ->all()),
+                SelectFilter::make('push_version')
+                    ->label(__('filament/resources/discovered-devices.filters.push_version'))
+                    ->options(fn (): array => DiscoveredDevice::query()
+                        ->whereNotIn('serial_number', Device::query()->select('serial_number'))
+                        ->whereNotNull('push_version')
+                        ->distinct()
+                        ->orderBy('push_version')
+                        ->pluck('push_version', 'push_version')
+                        ->all()),
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([
                 Action::make('register')
                     ->label(__('filament/resources/discovered-devices.register'))

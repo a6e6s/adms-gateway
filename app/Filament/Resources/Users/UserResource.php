@@ -5,16 +5,21 @@ namespace App\Filament\Resources\Users;
 use App\Filament\Resources\Users\Pages\ManageUsers;
 use App\Models\Company;
 use App\Models\User;
+use App\Services\CompanyAccess;
 use App\Services\ManageUserAccess;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Permission\Models\Role;
@@ -78,6 +83,28 @@ class UserResource extends Resource
                 TextColumn::make('roles.name')->label(__('filament/resources/users.fields.roles'))->badge(),
                 TextColumn::make('created_at')->label(__('filament/resources/users.fields.created_at'))->dateTime()->sortable(),
             ])
+            ->filters([
+                SelectFilter::make('companies')
+                    ->label(__('filament/resources/users.filters.company'))
+                    ->relationship('companies', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
+                    ->multiple()
+                    ->searchable(),
+                SelectFilter::make('roles')
+                    ->label(__('filament/resources/users.filters.role'))
+                    ->relationship('roles', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->where('guard_name', 'web'))
+                    ->multiple()
+                    ->searchable(),
+                Filter::make('created_at')
+                    ->label(__('filament/resources/users.filters.created_at'))
+                    ->schema([
+                        DatePicker::make('from')->label(__('filament/resources/users.filters.from')),
+                        DatePicker::make('until')->label(__('filament/resources/users.filters.until')),
+                    ])
+                    ->columns(2)->columnSpan(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['from'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '>=', $date))
+                        ->when($data['until'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '<=', $date))),
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([
                 EditAction::make()->fillForm(fn (User $record): array => [
                     'name' => $record->name,

@@ -17,6 +17,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -72,7 +74,18 @@ class EmployeeResource extends CompanyScopedResource
                     ->disabled(fn (Employee $record): bool => ! static::canEdit($record)),
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('company'))
-            ->filters([])
+            ->filters([
+                SelectFilter::make('company_id')
+                    ->label(__('filament/resources/employees.fields.company'))
+                    ->relationship('company', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
+                    ->searchable(),
+                SelectFilter::make('is_active')
+                    ->label(__('filament/resources/employees.filters.status'))
+                    ->options([
+                        '1' => __('filament/resources/employees.statuses.active'),
+                        '0' => __('filament/resources/employees.statuses.inactive'),
+                    ]),
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([EditAction::make()])
             ->toolbarActions([]);
     }

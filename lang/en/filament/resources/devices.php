@@ -23,7 +23,8 @@ return [
         'connection_status' => 'Connection status', 'last_seen_at' => 'Last seen', 'last_getrequest_at' => 'Last command poll',
         'device_time_at' => 'Device clock (device time zone)', 'attlog_stamp' => 'Attendance stamp',
     ],
-    'statuses' => ['online' => 'Online', 'offline' => 'Offline'],
+    'filters' => ['connection_status' => 'Connection status'],
+    'statuses' => ['online' => 'Online', 'offline' => 'Offline', 'enabled' => 'Enabled', 'disabled' => 'Disabled'],
     'privileges' => [0 => 'Normal user (0)', 2 => 'Registrar (2)', 6 => 'Administrator (6)', 10 => 'User-defined (10)', 14 => 'Super administrator (14)'],
     'placeholders' => ['not_received' => 'Not received'],
     'actions' => [
