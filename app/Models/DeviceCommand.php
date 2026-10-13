@@ -15,11 +15,11 @@ class DeviceCommand extends Model
     /** @use HasFactory<DeviceCommandFactory> */
     use HasFactory;
 
-    protected $fillable = ['device_id', 'requested_by', 'type', 'wire_command_id', 'wire_payload', 'query_start_time', 'query_end_time', 'status', 'requested_at', 'offered_at', 'wake_sent_at', 'wake_error', 'result_received_at', 'expires_at', 'result_source_ip', 'raw_result', 'result_history'];
+    protected $fillable = ['device_id', 'requested_by', 'type', 'wire_command_id', 'wire_payload', 'encrypted_payload', 'query_start_time', 'query_end_time', 'status', 'requested_at', 'offered_at', 'wake_sent_at', 'wake_error', 'result_received_at', 'expires_at', 'result_source_ip', 'raw_result', 'result_history'];
 
     protected function casts(): array
     {
-        return ['requested_at' => 'immutable_datetime', 'offered_at' => 'immutable_datetime', 'wake_sent_at' => 'immutable_datetime', 'result_received_at' => 'immutable_datetime', 'expires_at' => 'immutable_datetime', 'result_history' => 'array'];
+        return ['requested_at' => 'immutable_datetime', 'offered_at' => 'immutable_datetime', 'wake_sent_at' => 'immutable_datetime', 'result_received_at' => 'immutable_datetime', 'expires_at' => 'immutable_datetime', 'encrypted_payload' => 'encrypted', 'result_history' => 'array'];
     }
 
     /** @return BelongsTo<Device, $this> */

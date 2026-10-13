@@ -10,6 +10,7 @@ use App\Services\Adms\DeviceCommandService;
 use DateTimeZone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class DeviceController extends Controller
@@ -54,7 +55,7 @@ class DeviceController extends Controller
         ]);
     }
 
-    public function upload(Request $request, AcceptAttendanceUpload $acceptUpload): Response
+    public function upload(Request $request, AcceptAttendanceUpload $acceptUpload, DeviceCommandService $commands): Response
     {
         $device = $this->resolveDevice($request);
         if ($device instanceof Response) {
@@ -62,7 +63,7 @@ class DeviceController extends Controller
         }
 
         $table = mb_strtoupper((string) $request->query('table', ''));
-        if (! in_array($table, ['ATTLOG', 'OPTIONS'], true)) {
+        if (! in_array($table, ['ATTLOG', 'OPTIONS', 'OPERLOG', 'USER', 'USERINFO', 'BIODATA'], true)) {
             return $this->plain('Unsupported table', SymfonyResponse::HTTP_BAD_REQUEST);
         }
 
@@ -81,14 +82,81 @@ class DeviceController extends Controller
         }
 
         $this->touch($device, $request);
-        if ($table === 'OPTIONS') {
-            return $this->plain('OK');
-        }
-
         $stamp = $request->query('Stamp');
         $stamp = is_string($stamp) ? preg_replace('/[\x00-\x1F\x7F]/', '', trim($stamp)) : null;
         $stamp = is_string($stamp) && $stamp !== '' ? mb_substr($stamp, 0, 100) : null;
+
+        if ($table === 'OPTIONS') {
+            try {
+                $commands->recordQueryUpload($device, $table, $payload, $request->ip(), $stamp);
+            } catch (\InvalidArgumentException) {
+                return $this->plain('No matching device options query', SymfonyResponse::HTTP_BAD_REQUEST);
+            }
+
+            return $this->plain('OK');
+        }
+
+        if (in_array($table, ['USER', 'USERINFO', 'BIODATA'], true)) {
+            try {
+                $commands->recordQueryUpload($device, $table, $payload, $request->ip(), $stamp);
+            } catch (\InvalidArgumentException) {
+                return $this->plain('No matching device query command', SymfonyResponse::HTTP_BAD_REQUEST);
+            }
+
+            return $this->plain('OK');
+        }
+
+        if ($table === 'OPERLOG') {
+            try {
+                $commands->recordQueryUpload($device, $table, $payload, $request->ip(), $stamp);
+            } catch (\InvalidArgumentException) {
+            }
+
+            return $this->plain('OK');
+        }
+
         $acceptUpload->accept($device, $payload, $stamp, $request->ip());
+
+        return $this->plain('OK');
+    }
+
+    public function queryData(Request $request, DeviceCommandService $commands): Response
+    {
+        $device = $this->resolveDevice($request);
+        if ($device instanceof Response) {
+            return $device;
+        }
+
+        if (mb_strtolower((string) $request->query('type', '')) !== 'options') {
+            return $this->plain('Unsupported query data type', SymfonyResponse::HTTP_BAD_REQUEST);
+        }
+
+        $wireCommandId = filter_var($request->query('cmdid'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($wireCommandId === false || $wireCommandId === null) {
+            return $this->plain('Invalid options query command ID', SymfonyResponse::HTTP_BAD_REQUEST);
+        }
+
+        if ($request->headers->has('Content-Encoding') || $request->headers->has('Transfer-Encoding')) {
+            return $this->plain('Unsupported content encoding', SymfonyResponse::HTTP_UNSUPPORTED_MEDIA_TYPE);
+        }
+
+        $contentLength = $request->headers->get('Content-Length');
+        if (is_string($contentLength) && ctype_digit($contentLength) && (int) $contentLength > self::MAX_UPLOAD_BYTES) {
+            return $this->plain('Upload exceeds 1 MiB limit', SymfonyResponse::HTTP_CONTENT_TOO_LARGE);
+        }
+
+        $payload = $request->getContent();
+        if (strlen($payload) > self::MAX_UPLOAD_BYTES) {
+            return $this->plain('Upload exceeds 1 MiB limit', SymfonyResponse::HTTP_CONTENT_TOO_LARGE);
+        }
+
+        $this->touch($device, $request);
+
+        try {
+            $commands->recordQueryUpload($device, 'OPTIONS', $payload, $request->ip(), null, $wireCommandId);
+        } catch (\InvalidArgumentException) {
+            return $this->plain('No matching device options query', SymfonyResponse::HTTP_BAD_REQUEST);
+        }
 
         return $this->plain('OK');
     }
@@ -119,7 +187,21 @@ class DeviceController extends Controller
 
         try {
             $commands->recordResult($device, $payload, $request->ip());
-        } catch (\InvalidArgumentException) {
+        } catch (\InvalidArgumentException $exception) {
+            preg_match('/(?:^|[&\r\n])ID=([^&\r\n]*)/', $payload, $idMatch);
+            preg_match('/(?:^|[&\r\n])Return=([^&\r\n]*)/', $payload, $returnMatch);
+            preg_match('/(?:^|[&\r\n])CMD=([^&\r\n]*)/', $payload, $commandMatch);
+
+            Log::notice('Rejected ADMS device command result.', [
+                'device_serial_number' => $device->serial_number,
+                'source_ip' => $request->ip(),
+                'command_id' => $idMatch[1] ?? null,
+                'return_code' => $returnMatch[1] ?? null,
+                'command_name' => isset($commandMatch[1]) ? mb_substr($commandMatch[1], 0, 80) : null,
+                'body_length' => strlen($payload),
+                'reason' => $exception->getMessage(),
+            ]);
+
             return $this->plain('Invalid command result', SymfonyResponse::HTTP_BAD_REQUEST);
         }
 

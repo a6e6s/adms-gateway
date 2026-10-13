@@ -560,3 +560,37 @@ These documents include design targets and future work. Consult the implementati
 - Complete production authorization, deployment, load, and recovery validation.
 
 The application does not currently provide BioTime's payroll engine, shift calculations, employee self-service, biometric template management, arbitrary terminal commands, or a complete replica of its REST API.
+
+
+
+
+# device command
+- Query Users
+- Door Unlock
+- Set Device Time
+- Sync Clock
+- Get Device Info
+- Force full Attendance history resend (Attendance resend)
+- Attendance range query (Attendance requests)
+- Query Users
+- Update/create  User
+- Delete User
+- Register Fingerprint (need confirmation)
+- Reboot 
+- Set Web Server
+- Set Network
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

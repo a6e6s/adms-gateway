@@ -17,7 +17,13 @@ class Device extends Model
 
     protected function casts(): array
     {
-        return ['is_enabled' => 'boolean', 'last_seen_at' => 'immutable_datetime', 'last_getrequest_at' => 'immutable_datetime'];
+        return [
+            'is_enabled' => 'boolean',
+            'last_seen_at' => 'immutable_datetime',
+            'last_getrequest_at' => 'immutable_datetime',
+            'device_time_at' => 'immutable_datetime',
+            'device_time_checked_at' => 'immutable_datetime',
+        ];
     }
 
     public function isOnline(): bool

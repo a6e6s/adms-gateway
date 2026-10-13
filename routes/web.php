@@ -12,6 +12,7 @@ Route::post('/admin/language', SetAdminLanguageController::class)
 Route::prefix('iclock')->name('iclock.')->group(function (): void {
     Route::get('/cdata', [DeviceController::class, 'initialize'])->name('initialize');
     Route::post('/cdata', [DeviceController::class, 'upload'])->name('upload');
+    Route::post('/querydata', [DeviceController::class, 'queryData'])->name('query-data');
     Route::get('/getrequest', [DeviceController::class, 'poll'])->name('poll');
     Route::post('/devicecmd', [DeviceController::class, 'result'])->name('result');
     Route::get('/ping', [DeviceController::class, 'ping'])->name('ping');
