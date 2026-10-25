@@ -90,7 +90,7 @@ class DeviceController extends Controller
             try {
                 $commands->recordQueryUpload($device, $table, $payload, $request->ip(), $stamp);
             } catch (\InvalidArgumentException) {
-                return $this->plain('No matching device options query', SymfonyResponse::HTTP_BAD_REQUEST);
+                return $this->plain('Invalid device options upload', SymfonyResponse::HTTP_BAD_REQUEST);
             }
 
             return $this->plain('OK');
@@ -98,8 +98,12 @@ class DeviceController extends Controller
 
         if (in_array($table, ['USER', 'USERINFO', 'BIODATA'], true)) {
             try {
-                $commands->recordQueryUpload($device, $table, $payload, $request->ip(), $stamp);
+                $matchedCommand = $commands->recordQueryUpload($device, $table, $payload, $request->ip(), $stamp);
             } catch (\InvalidArgumentException) {
+                return $this->plain('No matching device query command', SymfonyResponse::HTTP_BAD_REQUEST);
+            }
+
+            if (! $matchedCommand) {
                 return $this->plain('No matching device query command', SymfonyResponse::HTTP_BAD_REQUEST);
             }
 
@@ -153,8 +157,12 @@ class DeviceController extends Controller
         $this->touch($device, $request);
 
         try {
-            $commands->recordQueryUpload($device, 'OPTIONS', $payload, $request->ip(), null, $wireCommandId);
+            $matchedCommand = $commands->recordQueryUpload($device, 'OPTIONS', $payload, $request->ip(), null, $wireCommandId);
         } catch (\InvalidArgumentException) {
+            return $this->plain('No matching device options query', SymfonyResponse::HTTP_BAD_REQUEST);
+        }
+
+        if (! $matchedCommand) {
             return $this->plain('No matching device options query', SymfonyResponse::HTTP_BAD_REQUEST);
         }
 

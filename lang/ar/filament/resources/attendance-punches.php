@@ -3,10 +3,10 @@
 return [
     'model_label' => 'بصمة حضور', 'plural_model_label' => 'بصمات الحضور',
     'columns' => [
-        'device_time' => 'وقت الجهاز', 'pin' => 'الرقم الشخصي', 'employee' => 'الموظف', 'device' => 'الجهاز',
+        'company' => 'الشركة', 'device_time' => 'وقت الجهاز', 'pin' => 'الرقم الشخصي', 'employee' => 'الموظف', 'device' => 'الجهاز',
         'status' => 'حالة الحضور', 'verification_code' => 'رمز التحقق', 'timezone' => 'المنطقة الزمنية', 'received_at' => 'وقت الاستلام',
     ],
-    'filters' => ['device' => 'الجهاز', 'device_time' => 'تاريخ الجهاز', 'from' => 'من', 'until' => 'إلى'],
+    'filters' => ['company' => 'الشركة', 'device' => 'الجهاز', 'device_time' => 'تاريخ الجهاز', 'from' => 'من', 'until' => 'إلى'],
     'status_codes' => [
         'check_in' => 'تسجيل حضور', 'check_out' => 'تسجيل انصراف', 'break_out' => 'بدء استراحة',
         'break_in' => 'نهاية استراحة', 'overtime_in' => 'بدء عمل إضافي', 'overtime_out' => 'انتهاء عمل إضافي',

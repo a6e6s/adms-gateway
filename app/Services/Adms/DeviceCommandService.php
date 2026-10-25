@@ -106,7 +106,7 @@ class DeviceCommandService
         ?string $sourceIp,
         ?string $stamp,
         ?int $wireCommandId = null,
-    ): void {
+    ): bool {
         $commandType = match (mb_strtoupper($table)) {
             'USER', 'USERINFO', 'OPERLOG' => 'guide_query_users',
             'BIODATA' => 'guide_query_templates',
@@ -126,7 +126,7 @@ class DeviceCommandService
         $command = $commandQuery->orderByDesc('requested_at')->first();
 
         if ($command === null) {
-            throw new \InvalidArgumentException('No matching device query command is waiting for an upload.');
+            return false;
         }
 
         $existingPayload = $command->encrypted_payload;
@@ -158,6 +158,8 @@ class DeviceCommandService
             'result_history' => array_slice($history, -10),
             'status' => 'acknowledged',
         ])->save();
+
+        return true;
     }
 
     public function syncClockToServer(Device $device, User $user): DeviceCommand
@@ -238,7 +240,7 @@ class DeviceCommandService
                 'query_end_time' => $queryEndValue,
                 'status' => 'pending',
                 'requested_at' => now(),
-                'expires_at' => now()->addDay(),
+                'expires_at' => now()->addMinutes(max(1, (int) config('services.adms.device_command_ttl_minutes', 1440))),
             ]);
         });
 

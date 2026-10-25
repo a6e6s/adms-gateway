@@ -12,6 +12,51 @@
     --adms-muted: #7185a1;
 }
 
+* {
+    scrollbar-color: #0787a5 #e5edf4;
+    scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+    width: 0.65rem;
+    height: 0.65rem;
+}
+
+::-webkit-scrollbar-track {
+    background: #e5edf4;
+}
+
+::-webkit-scrollbar-thumb {
+    border: 2px solid #e5edf4;
+    border-radius: 999px;
+    background: #0787a5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #08bdd7;
+}
+
+.dark * {
+    scrollbar-color: #1689a5 #0a1c2e;
+}
+
+.dark {
+    scrollbar-color: #1689a5 #0a1c2e;
+}
+
+.dark *::-webkit-scrollbar-track {
+    background: #0a1c2e;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+    border-color: #0a1c2e;
+    background: #1689a5;
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+    background: #08bdd7;
+}
+
 .fi-body {
     background-color: #f5faff;
     background-image:
@@ -630,9 +675,10 @@
     text-decoration: none;
 }
 
-.adms-login-brand svg {
+.adms-login-brand img {
     width: clamp(2rem, 3vw, 2.65rem);
     height: clamp(2rem, 3vw, 2.65rem);
+    border-radius: 0.55rem;
 }
 
 .adms-login-form-wrap {

@@ -59,6 +59,7 @@ class AttendancePunchResource extends CompanyScopedResource
             ->paginationPageOptions([25])
             ->defaultPaginationPageOption(25)
             ->columns([
+                TextColumn::make('company.name')->label(__('filament/resources/attendance-punches.columns.company'))->searchable(),
                 TextColumn::make('occurred_at_local')->label(__('filament/resources/attendance-punches.columns.device_time'))->sortable()->searchable(),
                 TextColumn::make('pin')->label(__('filament/resources/attendance-punches.columns.pin'))->searchable()->sortable(),
                 TextColumn::make('employee.name')->label(__('filament/resources/attendance-punches.columns.employee'))->placeholder(__('filament.common.unmapped')),
@@ -70,6 +71,10 @@ class AttendancePunchResource extends CompanyScopedResource
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['device', 'employee']))
             ->filters([
+                SelectFilter::make('company_id')
+                    ->label(__('filament/resources/attendance-punches.filters.company'))
+                    ->relationship('company', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
+                    ->searchable(),
                 SelectFilter::make('device_id')
                     ->label(__('filament/resources/attendance-punches.filters.device'))
                     ->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))

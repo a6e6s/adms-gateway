@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="بوابة ADMS من JIT لجمع سجلات الحضور من أجهزة ZKTeco، إدارة الأجهزة، وربط بيانات الحضور بأنظمة الموارد البشرية.">
     <meta name="theme-color" content="#071b31">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
+    <link rel="alternate icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
     <title>JIT | بوابة ADMS لإدارة بيانات الحضور</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,15 +18,30 @@
 <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:right-4 focus:z-50 focus:bg-white focus:p-4">انتقل إلى المحتوى</a>
 <div data-scroll-progress class="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 origin-right bg-[#08bdd7]" aria-hidden="true"></div>
 <header class="border-b border-slate-200 bg-white">
-    <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5 px-6 py-5 lg:px-10">
-        <a href="{{ route('home') }}" class="flex items-center gap-4" aria-label="JIT — الرئيسية">
-            <img src="{{ asset('images/jit-logo.png') }}" alt="شعار JIT" width="1380" height="502" class="h-10 w-auto">
-            <span class="border-r border-slate-200 pr-4 text-sm font-semibold">بوابة الحضور <span dir="ltr" class="block text-xs tracking-widest text-slate-500">ADMS GATEWAY</span></span>
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
+        <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-2 sm:gap-4" dir="ltr" aria-label="JIT و ADMS — الرئيسية">
+            {{-- <span class="border-r border-slate-200 pr-4 text-right text-sm font-semibold" dir="rtl">بوابة الحضور <span dir="ltr" class="block text-xs tracking-widest text-slate-500">ADMS GATEWAY</span></span> --}}
+            <img src="{{ asset('images/adms-logo.png') }}" alt="شعار ADMS" width="901" height="255" class="h-6 w-auto sm:h-8">
+            <span class="hidden h-9 border-r border-slate-200 sm:block" aria-hidden="true"></span>
+            <img src="{{ asset('images/jit-logo.png') }}" alt="شعار JIT" width="1380" height="502" class="h-6 w-auto sm:h-8">
         </a>
-        <nav aria-label="القائمة الرئيسية" class="flex flex-wrap items-center gap-5 text-sm">
+        <nav aria-label="القائمة الرئيسية" class="hidden items-center gap-5 text-sm lg:flex">
             <a href="#features" class="hover:text-[#087f9f]">المميزات</a><a href="#workflow" class="hover:text-[#087f9f]">آلية العمل</a><a href="#about" class="hover:text-[#087f9f]">عن JIT</a><a href="#faq" class="hover:text-[#087f9f]">الأسئلة الشائعة</a><a href="{{ url('/docs/api') }}" class="hover:text-[#087f9f]">توثيق API</a>
             <a href="{{ route('filament.admin.auth.login') }}" class="rounded-full bg-[#087f9f] px-5 py-3 font-semibold text-white hover:bg-[#071b31]">دخول المنصة ↗</a>
         </nav>
+        <details class="relative w-10 shrink-0 lg:hidden">
+            <summary aria-label="فتح القائمة" class="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-lg border border-slate-200 text-[#10213d] hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+                <x-heroicon-o-bars-3 class="h-6 w-6" aria-hidden="true" />
+            </summary>
+            <nav aria-label="القائمة الرئيسية" class="fixed left-1 top-16 z-50 grid w-52 max-w-[calc(100vw-1rem)] gap-1 rounded-xl border border-slate-200 bg-white p-2 text-sm shadow-xl">
+                <a href="#features" class="rounded-lg px-4 py-3 hover:bg-slate-50">المميزات</a>
+                <a href="#workflow" class="rounded-lg px-4 py-3 hover:bg-slate-50">آلية العمل</a>
+                <a href="#about" class="rounded-lg px-4 py-3 hover:bg-slate-50">عن JIT</a>
+                <a href="#faq" class="rounded-lg px-4 py-3 hover:bg-slate-50">الأسئلة الشائعة</a>
+                <a href="{{ url('/docs/api') }}" class="rounded-lg px-4 py-3 hover:bg-slate-50">توثيق API</a>
+                <a href="{{ route('filament.admin.auth.login') }}" class="mt-1 rounded-lg bg-[#087f9f] px-4 py-3 text-center font-semibold text-white hover:bg-[#071b31]">دخول المنصة ↗</a>
+            </nav>
+        </details>
     </div>
 </header>
 <main id="main">
@@ -77,7 +95,7 @@
         </div>
     </section>
     <section id="about" class="scroll-mt-8 border-y border-slate-200 bg-white">
-        <div class="mx-auto max-w-7xl px-6 py-24 lg:px-10"><div class="grid gap-12 lg:grid-cols-2"><div><img src="{{ asset('images/jit-logo.png') }}" alt="JIT" width="1380" height="502" loading="lazy" class="mb-8 h-16 w-auto"><p class="text-sm font-semibold text-[#087f9f]">عن JIT</p><h2 class="mt-4 text-3xl leading-normal font-bold sm:text-4xl">الإنسان في قلب التطور</h2></div><div><p class="text-lg leading-9 text-slate-600">تقدم JIT، بحسب موقعها الرسمي، الاستشارات والحلول التقنية في مجال الموارد البشرية. وتضع تمكين المؤسسات وتطوير بيئات العمل في صميم رسالتها.</p><p class="mt-5 leading-8 text-slate-600">تعكس قيمها التركيز على الشراكة والابتكار والنزاهة والتميز. ويساعد تنظيم بيانات الحضور على توفير أساس أوضح لعمل فرق الموارد البشرية.</p><a href="https://jit.sa" target="_blank" rel="noopener noreferrer" class="mt-6 inline-block font-semibold text-[#087f9f] hover:underline">تعرف على JIT عبر الموقع الرسمي ↗</a></div></div>
+        <div class="mx-auto max-w-7xl px-6 py-24 lg:px-10"><div class="grid gap-12 lg:grid-cols-2"><div><img src="{{ asset('images/adms-logo.png') }}" alt="ADMS" width="901" height="389" loading="lazy" class="mb-8 h-16 w-auto"><p class="text-sm font-semibold text-[#087f9f]">عن JIT</p><h2 class="mt-4 text-3xl leading-normal font-bold sm:text-4xl">الإنسان في قلب التطور</h2></div><div><p class="text-lg leading-9 text-slate-600">تقدم JIT، بحسب موقعها الرسمي، الاستشارات والحلول التقنية في مجال الموارد البشرية. وتضع تمكين المؤسسات وتطوير بيئات العمل في صميم رسالتها.</p><p class="mt-5 leading-8 text-slate-600">تعكس قيمها التركيز على الشراكة والابتكار والنزاهة والتميز. ويساعد تنظيم بيانات الحضور على توفير أساس أوضح لعمل فرق الموارد البشرية.</p><a href="https://jit.sa" target="_blank" rel="noopener noreferrer" class="mt-6 inline-block font-semibold text-[#087f9f] hover:underline">تعرف على JIT عبر الموقع الرسمي ↗</a></div></div>
         <div class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">@foreach (['الشراكة', 'الابتكار', 'النزاهة', 'التميز'] as $value)<div data-reveal class="rounded-xl bg-[#e8f8fd] px-6 py-5 text-center font-semibold text-[#071b31]"><x-dynamic-component :component="['heroicon-o-hand-raised', 'heroicon-o-light-bulb', 'heroicon-o-shield-check', 'heroicon-o-sparkles'][$loop->index]" class="mx-auto mb-3 h-7 w-7" aria-hidden="true" />{{ $value }}</div>@endforeach</div>
         </div>
     </section>
@@ -91,6 +109,6 @@
     </section>
     <section class="px-6 pb-24"><div data-reveal class="mx-auto max-w-7xl rounded-3xl bg-[#087f9f] px-8 py-16 text-center text-white sm:px-16"><p class="text-sm text-[#dff4fa]">ابدأ من بياناتك</p><h2 class="mt-4 text-3xl leading-normal font-bold sm:text-4xl">امنح بيانات الحضور مكانًا واحدًا واضحًا</h2><p class="mx-auto mt-5 max-w-2xl leading-8 text-[#eff9fc]">ادخل إلى لوحة الإدارة لمتابعة أجهزتك وسجلات الحضور، أو تواصل مع JIT للتعرف على خدمات الموارد البشرية.</p><div class="mt-8 flex flex-wrap justify-center gap-4"><a href="{{ route('filament.admin.auth.login') }}" class="rounded-full bg-white px-7 py-4 font-semibold text-[#071b31] hover:bg-[#eff9fc]">دخول المنصة ↗</a><a href="https://jit.sa/contact" target="_blank" rel="noopener noreferrer" class="rounded-full border border-white/50 px-7 py-4 font-semibold hover:bg-white/10">تواصل مع JIT</a></div></div></section>
 </main>
-<footer class="border-t border-slate-200 bg-white"><div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-8 px-6 py-10 lg:px-10"><div><img src="{{ asset('images/jit-logo.png') }}" alt="JIT" width="1380" height="502" loading="lazy" class="h-9 w-auto"><p class="mt-4 text-sm text-slate-500">بوابة ADMS · بيانات حضور منظمة لعمليات أكثر وضوحًا.</p></div><nav aria-label="روابط التذييل" class="flex flex-wrap gap-6 text-sm"><a href="#features" class="hover:text-[#087f9f]">المميزات</a><a href="#faq" class="hover:text-[#087f9f]">الأسئلة الشائعة</a><a href="{{ url('/docs/api') }}" class="hover:text-[#087f9f]">توثيق API</a><a href="https://jit.sa" class="hover:text-[#087f9f]" target="_blank" rel="noopener noreferrer">الموقع الرسمي لـ JIT ↗</a></nav><p class="w-full border-t border-slate-100 pt-6 text-xs text-slate-500">© {{ date('Y') }} JIT · معلومات الشركة وشعارها من <a href="https://jit.sa" class="underline">jit.sa</a></p></div></footer>
+<footer class="border-t border-slate-200 bg-white"><div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-8 px-6 py-10 lg:px-10"><div><img src="{{ asset('images/adms-logo.png') }}" alt="ADMS" width="901" height="389" loading="lazy" class="h-9 w-auto"><p class="mt-4 text-sm text-slate-500">بوابة ADMS · بيانات حضور منظمة لعمليات أكثر وضوحًا.</p></div><nav aria-label="روابط التذييل" class="flex flex-wrap gap-6 text-sm"><a href="#features" class="hover:text-[#087f9f]">المميزات</a><a href="#faq" class="hover:text-[#087f9f]">الأسئلة الشائعة</a><a href="{{ url('/docs/api') }}" class="hover:text-[#087f9f]">توثيق API</a><a href="https://jit.sa" class="hover:text-[#087f9f]" target="_blank" rel="noopener noreferrer">الموقع الرسمي لـ JIT ↗</a></nav><p class="w-full border-t border-slate-100 pt-6 text-xs text-slate-500">© {{ date('Y') }} JIT · معلومات الشركة وشعارها من <a href="https://jit.sa" class="underline">jit.sa</a></p></div></footer>
 </body>
 </html>

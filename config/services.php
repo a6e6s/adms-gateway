@@ -39,6 +39,7 @@ return [
         'dashboard_timezone' => env('ADMS_DASHBOARD_TIMEZONE', 'Asia/Riyadh'),
         'pending_upload_warning_minutes' => (int) env('ADMS_PENDING_UPLOAD_WARNING_MINUTES', 5),
         'device_online_window_minutes' => (int) env('ADMS_DEVICE_ONLINE_WINDOW_MINUTES', 5),
+        'device_command_ttl_minutes' => (int) env('ADMS_DEVICE_COMMAND_TTL_MINUTES', 1440),
         'zk_sdk_port' => (int) env('ZK_SDK_PORT', 4370),
         'zk_sdk_timeout_seconds' => (int) env('ZK_SDK_TIMEOUT_SECONDS', 3),
         'zk_comm_key' => (int) env('ZK_COMM_KEY', 0),

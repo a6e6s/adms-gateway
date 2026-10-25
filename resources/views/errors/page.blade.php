@@ -23,6 +23,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
+    <link rel="alternate icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
     <meta name="theme-color" content="#071b31">
     <title>{{ $code }} · {{ $copy[0] }} · {{ __('filament.brand') }}</title>
     <style>

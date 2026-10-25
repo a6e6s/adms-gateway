@@ -3,13 +3,13 @@
 return [
     'model_label' => 'أمر جهاز', 'plural_model_label' => 'أوامر الأجهزة',
     'columns' => [
-        'device' => 'الجهاز', 'type' => 'الأمر', 'wire_command_id' => 'معرّف البروتوكول', 'query_start_time' => 'من (وقت الجهاز)',
+        'company' => 'الشركة', 'device' => 'الجهاز', 'type' => 'الأمر', 'wire_command_id' => 'معرّف البروتوكول', 'query_start_time' => 'من (وقت الجهاز)',
         'query_end_time' => 'إلى (وقت الجهاز)', 'status' => 'الحالة', 'requested_at' => 'وقت الطلب', 'offered_at' => 'وقت الإرسال',
         'wake_sent_at' => 'وقت إرسال UDP', 'wake_error' => 'مشكلة الإيقاظ', 'result_received_at' => 'وقت استلام النتيجة',
         'attendance_uploads_count' => 'عمليات الرفع المطابقة', 'expires_at' => 'وقت الانتهاء', 'raw_result' => 'استجابة الجهاز',
     ],
     'filters' => [
-        'device' => 'الجهاز', 'type' => 'الأمر', 'status' => 'الحالة', 'requested_at' => 'تاريخ الطلب',
+        'company' => 'الشركة', 'device' => 'الجهاز', 'type' => 'الأمر', 'status' => 'الحالة', 'requested_at' => 'تاريخ الطلب',
         'from' => 'من', 'until' => 'إلى',
     ],
     'option_fields' => [

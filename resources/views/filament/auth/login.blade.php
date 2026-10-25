@@ -52,16 +52,8 @@
 
     <section class="adms-login-panel" dir="{{ $loginDirection }}">
         <a href="{{ filament()->getHomeUrl() ?: '/' }}" class="adms-login-brand" dir="ltr" aria-label="{{ __('filament.brand') }}">
+            <img src="{{ asset('images/adms-app-icon.svg') }}" alt="" aria-hidden="true">
             <span dir="auto">{{ __('filament.brand') }}</span>
-            <svg viewBox="0 0 40 40" aria-hidden="true">
-                <path d="M20 2 39 37H27L20 23 13 37H1L20 2Z" fill="url(#adms-logo-gradient)" />
-                <defs>
-                    <linearGradient id="adms-logo-gradient" x1="8" y1="5" x2="31" y2="37" gradientUnits="userSpaceOnUse">
-                        <stop stop-color="#27d7e8" />
-                        <stop offset="1" stop-color="#087da2" />
-                    </linearGradient>
-                </defs>
-            </svg>
         </a>
 
         <div class="adms-login-form-wrap">

@@ -33,6 +33,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login(Login::class)
             ->brandName(fn (): string => __('filament.brand'))
+            ->brandLogo(asset('images/adms-logo-dark.png'))
+            ->brandLogoHeight('2.5rem')
+            ->favicon(asset('favicon.png'))
             ->colors([
                 'primary' => Color::Cyan,
                 'gray' => Color::Slate,

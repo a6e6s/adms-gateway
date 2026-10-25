@@ -154,12 +154,15 @@ SESSION_DRIVER=database
 
 APP_LOCALE=en
 APP_FALLBACK_LOCALE=en
+ADMS_DEVICE_COMMAND_TTL_MINUTES=1440
 ADMS_DEVICE_ONLINE_WINDOW_MINUTES=5
 ```
 
 The application timezone is read from `APP_TIMEZONE` and defaults to `Asia/Riyadh` in `config/app.php`. Company and device timezones are configured independently in the panel. Device-local attendance interpretation uses the timezone saved with the upload.
 
 The optional `ADMS_DEVICE_ONLINE_WINDOW_MINUTES` setting controls the device's online indicator. It is a recent-contact threshold, not proof that a terminal can currently receive a command.
+
+`ADMS_DEVICE_COMMAND_TTL_MINUTES` sets how long a newly queued device command remains active; its default is 1440 minutes (24 hours). Existing commands keep their recorded expiration time. An expired pending command will no longer be offered, and an offered command is marked `unknown` on the device's next poll.
 
 ### 3. Create an operator account
 
@@ -285,6 +288,8 @@ Clear Log, Clear Data, and Clear Photo are intentionally hidden from the command
 Command records show request and delivery timestamps, device response/result data, and the wake-up attempt where applicable. GET OPTIONS responses are displayed as readable key/value fields, with the communication password masked. Query start/end times apply to date-range attendance commands and remain empty for operations that do not request a time range. Sensitive user and biometric command payloads are stored using the application's encrypted model fields.
 
 Only pending commands can be cancelled. Once a command has been offered to the terminal, the application cannot retract it from the device. Device responses are asynchronous: a queued command is not proof that the terminal received or completed it.
+
+The active-command restriction applies to unexpired commands with `pending`, `offered`, `unknown`, or `attendance_received` status. The TTL setting controls how long those commands block another command for the same device.
 
 ## BioTime attendance API
 

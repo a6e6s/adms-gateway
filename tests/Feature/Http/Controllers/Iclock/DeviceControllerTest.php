@@ -46,6 +46,20 @@ it('stores an accepted attendance upload stamp before acknowledging the upload',
     expect($device->fresh()->attlog_stamp)->toBe('9999');
 });
 
+it('acknowledges unsolicited device options uploads without creating a command result', function () {
+    $device = Device::factory()->create();
+    $payload = "DeviceName=Example Terminal\nNetMask=255.255.255.0\nDHCP=0\n";
+
+    $response = $this->call(
+        'POST',
+        '/iclock/cdata?SN='.$device->serial_number.'&table=OPTIONS',
+        content: $payload,
+    );
+
+    $response->assertOk()->assertContent('OK');
+    $this->assertDatabaseCount('device_commands', 0);
+});
+
 it('creates a placeholder employee and device mapping for a new attendance PIN', function () {
     $device = Device::factory()->create();
     $payload = "9123\t2026-10-05 11:49:53\t1\t1\t\t0\t0\t\n";
@@ -456,6 +470,17 @@ it('expires an overdue attendance request when the device polls', function () {
 
     $response->assertOk()->assertContent('OK');
     expect($command->fresh()->status)->toBe('expired');
+});
+
+it('uses the configured lifetime for a newly queued device command', function () {
+    config()->set('services.adms.device_command_ttl_minutes', 30);
+    $this->travelTo('2026-10-06 12:00:00 UTC');
+    $device = Device::factory()->create();
+    $user = User::factory()->superAdmin()->create();
+
+    $command = app(DeviceCommandService::class)->requestDeviceInfo($device, $user);
+
+    expect($command->expires_at->utc()->format('Y-m-d H:i:s'))->toBe('2026-10-06 12:30:00');
 });
 
 it('acknowledges a late result for an expired command without reopening it', function () {

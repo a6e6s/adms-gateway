@@ -4,6 +4,7 @@ namespace App\Filament\Resources\DeviceCommands;
 
 use App\Filament\Resources\CompanyScopedResource;
 use App\Filament\Resources\DeviceCommands\Pages\ManageDeviceCommands;
+use App\Models\Company;
 use App\Models\DeviceCommand;
 use App\Models\User;
 use App\Services\Adms\DeviceCommandService;
@@ -64,6 +65,7 @@ class DeviceCommandResource extends CompanyScopedResource
             ->paginationPageOptions([25])
             ->defaultPaginationPageOption(25)
             ->columns([
+                TextColumn::make('device.company.name')->label(__('filament/resources/device-commands.columns.company'))->searchable(),
                 TextColumn::make('device.serial_number')->label(__('filament/resources/device-commands.columns.device'))->searchable(),
                 TextColumn::make('type')->label(__('filament/resources/device-commands.columns.type'))
                     ->badge()
@@ -112,6 +114,18 @@ class DeviceCommandResource extends CompanyScopedResource
             ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('device'))
             ->filters([
+                SelectFilter::make('company_id')
+                    ->label(__('filament/resources/device-commands.filters.company'))
+                    ->options(fn (): array => Company::query()
+                        ->whereIn('id', CompanyAccess::scope(Company::query())->select('id'))
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->searchable()
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        $data['value'] ?? null,
+                        fn (Builder $query, int|string $companyId): Builder => $query->whereHas('device', fn (Builder $deviceQuery): Builder => $deviceQuery->where('company_id', $companyId)),
+                    )),
                 SelectFilter::make('device_id')
                     ->label(__('filament/resources/device-commands.filters.device'))
                     ->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
