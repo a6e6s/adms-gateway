@@ -73,7 +73,8 @@ class DeviceEmployeeResource extends CompanyScopedResource
                 SelectFilter::make('device_id')
                     ->label(__('filament/resources/device-employees.fields.device'))
                     ->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('employee_id')
                     ->label(__('filament/resources/device-employees.fields.employee'))
                     ->relationship('employee', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))

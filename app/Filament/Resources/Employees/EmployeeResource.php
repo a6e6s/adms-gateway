@@ -78,7 +78,8 @@ class EmployeeResource extends CompanyScopedResource
                 SelectFilter::make('company_id')
                     ->label(__('filament/resources/employees.fields.company'))
                     ->relationship('company', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('is_active')
                     ->label(__('filament/resources/employees.filters.status'))
                     ->options([

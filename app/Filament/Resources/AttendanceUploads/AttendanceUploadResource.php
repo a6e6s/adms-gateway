@@ -77,7 +77,8 @@ class AttendanceUploadResource extends CompanyScopedResource
                 SelectFilter::make('device_id')
                     ->label(__('filament/resources/attendance-uploads.filters.device'))
                     ->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('status')->label(__('filament/resources/attendance-uploads.columns.status'))->options([
                     'pending' => __('filament/resources/attendance-uploads.statuses.pending'),
                     'processing' => __('filament/resources/attendance-uploads.statuses.processing'),

@@ -88,7 +88,8 @@ class UserResource extends Resource
                     ->label(__('filament/resources/users.filters.company'))
                     ->relationship('companies', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
                     ->multiple()
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('roles')
                     ->label(__('filament/resources/users.filters.role'))
                     ->relationship('roles', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->where('guard_name', 'web'))

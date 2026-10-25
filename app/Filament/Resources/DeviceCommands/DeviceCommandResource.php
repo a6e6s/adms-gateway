@@ -122,6 +122,7 @@ class DeviceCommandResource extends CompanyScopedResource
                         ->pluck('name', 'id')
                         ->all())
                     ->searchable()
+                    ->preload()
                     ->query(fn (Builder $query, array $data): Builder => $query->when(
                         $data['value'] ?? null,
                         fn (Builder $query, int|string $companyId): Builder => $query->whereHas('device', fn (Builder $deviceQuery): Builder => $deviceQuery->where('company_id', $companyId)),
@@ -129,7 +130,8 @@ class DeviceCommandResource extends CompanyScopedResource
                 SelectFilter::make('device_id')
                     ->label(__('filament/resources/device-commands.filters.device'))
                     ->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('type')
                     ->label(__('filament/resources/device-commands.filters.type'))
                     ->options(fn (): array => DeviceCommand::query()

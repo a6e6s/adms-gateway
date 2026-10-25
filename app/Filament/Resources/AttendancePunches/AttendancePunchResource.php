@@ -74,11 +74,13 @@ class AttendancePunchResource extends CompanyScopedResource
                 SelectFilter::make('company_id')
                     ->label(__('filament/resources/attendance-punches.filters.company'))
                     ->relationship('company', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('device_id')
                     ->label(__('filament/resources/attendance-punches.filters.device'))
                     ->relationship('device', 'serial_number', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('status_code')
                     ->label(__('filament/resources/attendance-punches.columns.status'))
                     ->options([

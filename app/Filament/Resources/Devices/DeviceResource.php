@@ -110,7 +110,8 @@ class DeviceResource extends CompanyScopedResource
                 SelectFilter::make('company_id')
                     ->label(__('filament/resources/devices.fields.company'))
                     ->relationship('company', 'name', modifyQueryUsing: fn (Builder $query): Builder => CompanyAccess::scope($query))
-                    ->searchable(),
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('is_enabled')
                     ->label(__('filament/resources/devices.fields.is_enabled'))
                     ->options([
