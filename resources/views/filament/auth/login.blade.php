@@ -52,7 +52,7 @@
 
     <section class="adms-login-panel" dir="{{ $loginDirection }}">
         <a href="{{ filament()->getHomeUrl() ?: '/' }}" class="adms-login-brand" dir="ltr" aria-label="{{ __('filament.brand') }}">
-            <img src="{{ asset('images/adms-app-icon.svg') }}" alt="" aria-hidden="true">
+            <img src="{{ asset('images/adms-logo.png') }}" alt="" aria-hidden="true">
             <span dir="auto">{{ __('filament.brand') }}</span>
         </a>
 

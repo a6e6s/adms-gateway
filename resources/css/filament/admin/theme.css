@@ -676,9 +676,10 @@
 }
 
 .adms-login-brand img {
-    width: clamp(2rem, 3vw, 2.65rem);
-    height: clamp(2rem, 3vw, 2.65rem);
-    border-radius: 0.55rem;
+    width: clamp(8rem, 13vw, 11rem);
+    height: auto;
+    max-width: 100%;
+    object-fit: contain;
 }
 
 .adms-login-form-wrap {
@@ -710,7 +711,7 @@
 
 .adms-login-form .fi-input-wrp {
     min-height: 3.15rem;
-    border-color: #dce5ee;
+    border: 1px solid #cbd8e4;
     border-radius: 0.8rem;
     background: #ffffff;
     box-shadow: 0 2px 5px rgb(30 65 91 / 3%);

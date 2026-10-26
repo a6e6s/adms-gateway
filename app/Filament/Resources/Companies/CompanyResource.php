@@ -4,13 +4,17 @@ namespace App\Filament\Resources\Companies;
 
 use App\Filament\Resources\Companies\Pages\ManageCompanies;
 use App\Filament\Resources\CompanyScopedResource;
+use App\Models\BioTimeClient;
 use App\Models\Company;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -18,6 +22,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use UnitEnum;
 
@@ -83,37 +88,106 @@ class CompanyResource extends CompanyScopedResource
             ->recordActions([
                 EditAction::make(),
                 Action::make('createApiClient')
-                    ->label(__('filament/resources/companies.api_client.create'))
+                    ->label(__('filament/resources/companies.api_client.manage'))
                     ->modalHeading(fn (Company $record): string => __('filament/resources/companies.api_client.heading', ['company' => $record->name]))
-                    ->modalDescription(__('filament/resources/companies.api_client.instructions'))
-                    ->visible(fn (Company $record): bool => $record->is_active && static::canEdit($record))
+                    ->modalSubmitActionLabel(__('filament/resources/companies.api_client.save'))
+                    ->modalDescription(fn (Company $record): string => $record->bioTimeClients()->exists()
+                        ? __('filament/resources/companies.api_client.existing_list', [
+                            'credentials' => $record->bioTimeClients()->orderBy('username')->pluck('username')->implode(', '),
+                        ])
+                        : __('filament/resources/companies.api_client.none'))
+                    ->visible(fn (Company $record): bool => static::canEdit($record))
                     ->schema([
-                        TextInput::make('username')
-                            ->label(__('filament/resources/companies.api_client.username'))
-                            ->required()->maxLength(150)->regex('/^\\S+$/u')
-                            ->unique(table: 'bio_time_clients', column: 'username', ignoreRecord: false),
-                        TextInput::make('password')
-                            ->label(__('filament/resources/companies.api_client.password'))
-                            ->password()->required()->minLength(12)->maxLength(4096)->confirmed(),
-                        TextInput::make('password_confirmation')
-                            ->label(__('filament/resources/companies.api_client.password_confirmation'))
-                            ->password()->required()->dehydrated(false),
+                        Repeater::make('bioTimeClients')
+                            ->label(__('filament/resources/companies.api_client.credentials'))
+                            ->itemLabel(fn (array $state): ?string => $state['username'] ?? null)
+                            ->schema([
+                                Hidden::make('id'),
+                                TextInput::make('username')
+                                    ->label(__('filament/resources/companies.api_client.username'))
+                                    ->required(fn (Get $get): bool => blank($get('id')))->maxLength(150)->regex('/^\\S+$/u')
+                                    ->unique(
+                                        table: 'bio_time_clients',
+                                        column: 'username',
+                                        ignorable: fn (Get $get): ?BioTimeClient => filled($get('id')) ? BioTimeClient::query()->find($get('id')) : null,
+                                        ignoreRecord: false,
+                                    ),
+                                Toggle::make('is_active')
+                                    ->label(__('filament/resources/companies.api_client.active'))
+                                    ->required(),
+                                TextInput::make('password')
+                                    ->label(__('filament/resources/companies.api_client.new_password'))
+                                    ->password()->nullable()->required(fn (Get $get): bool => blank($get('id')))
+                                    ->formatStateUsing(fn (): null => null)
+                                    ->dehydrated(fn (?string $state): bool => filled($state))
+                                    ->minLength(12)->maxLength(4096)->confirmed(),
+                                TextInput::make('password_confirmation')
+                                    ->label(__('filament/resources/companies.api_client.password_confirmation'))
+                                    ->password()->nullable()->required(fn (Get $get): bool => blank($get('id')))->dehydrated(false),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->addable()
+                            ->deletable()
+                            ->deleteAction(fn (Action $action): Action => $action
+                                ->label(__('filament/resources/companies.api_client.revoke'))
+                                ->requiresConfirmation()
+                                ->modalHeading(__('filament/resources/companies.api_client.revoke_heading'))
+                                ->modalDescription(__('filament/resources/companies.api_client.revoke_description'))),
+                    ])
+                    ->fillForm(fn (Company $record): array => [
+                        'bioTimeClients' => $record->bioTimeClients()
+                            ->get(['id', 'username', 'is_active'])
+                            ->mapWithKeys(fn ($client): array => [(string) $client->id => [
+                                'id' => $client->id,
+                                'username' => $client->username,
+                                'is_active' => $client->is_active,
+                                'password' => null,
+                                'password_confirmation' => null,
+                            ]])->all(),
                     ])
                     ->action(function (Company $record, array $data): void {
-                        $record->refresh();
-                        Gate::authorize('update', $record);
-                        abort_unless($record->is_active, 403);
+                        DB::transaction(function () use ($record, $data): void {
+                            $record->refresh();
+                            Gate::authorize('update', $record);
 
-                        $record->bioTimeClients()->create([
-                            'username' => $data['username'],
-                            'password' => $data['password'],
-                            'is_active' => true,
-                        ]);
+                            $existingClientIds = $record->bioTimeClients()->pluck('id')->all();
+                            $retainedClientIds = [];
+
+                            foreach ($data['bioTimeClients'] ?? [] as $clientData) {
+                                if (blank($clientData['id'] ?? null)) {
+                                    abort_unless($record->is_active, 403);
+
+                                    $record->bioTimeClients()->create([
+                                        'username' => $clientData['username'],
+                                        'password' => $clientData['password'],
+                                        'is_active' => true,
+                                    ]);
+
+                                    continue;
+                                }
+
+                                $client = $record->bioTimeClients()->findOrFail($clientData['id']);
+                                $retainedClientIds[] = $client->id;
+                                $client->username = $clientData['username'];
+                                $client->is_active = $clientData['is_active'];
+
+                                if (filled($clientData['password'] ?? null)) {
+                                    $client->password = $clientData['password'];
+                                }
+
+                                $client->save();
+                            }
+
+                            $record->bioTimeClients()
+                                ->whereIn('id', $existingClientIds)
+                                ->whereNotIn('id', $retainedClientIds)
+                                ->delete();
+                        });
 
                         Notification::make()
-                            ->title(__('filament/resources/companies.api_client.created'))
-                            ->body(__('filament/resources/companies.api_client.instructions'))
-                            ->success()->persistent()->send();
+                            ->title(__('filament/resources/companies.api_client.saved'))
+                            ->success()->send();
                     }),
             ])
             ->toolbarActions([]);
